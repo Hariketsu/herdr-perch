@@ -81,13 +81,13 @@ public struct AgentInfo: Sendable, Equatable {
     public var agent: String             // agent，例如 "claude"
     public var displayAgent: String?     // display_agent
     public var name: String?             // name
-    public var status: AgentStatus       // agent_status
+    public var status: AgentStatus       // agent_status；缺失或未知字符串 → .unknown
     public var stateChangeSeq: UInt64    // state_change_seq，缺失时 0
     public var completionSeq: UInt64?    // completion_seq
-    public var title: String?            // terminal_title_stripped
+    public var title: String?            // title ?? terminal_title_stripped（title 是 metadata 覆盖值，优先）
     public var stateLabels: [String: String]  // state_labels，缺失时 [:]
     public var cwd: String?              // foreground_cwd ?? cwd
-    public var focused: Bool
+    public var focused: Bool             // 缺失 → false
 }
 
 public struct PaneInfo: Sendable, Equatable {
@@ -113,7 +113,7 @@ public struct Subscription: Hashable, Sendable {
 public enum HerdrError: Error, Equatable, Sendable {
     case connectFailed(Int32)            // errno；ENOENT/ECONNREFUSED 等
     case timeout
-    case closedByPeer                    // 未收到完整一行就被关闭
+    case closedByPeer                    // 未收到完整一行就被关闭；或写入时对端已关闭（EPIPE / ECONNRESET）
     case malformedResponse
     case server(code: String, message: String)
     case eventsLost

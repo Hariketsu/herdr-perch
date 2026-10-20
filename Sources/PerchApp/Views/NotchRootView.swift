@@ -41,7 +41,11 @@ struct NotchRootView: View {
                           centerWidth: model.geometry.centerWidth, wingWidth: model.wingWidth,
                           height: model.geometry.bandHeight)
                 .frame(width: collapsed.width)
-                .modifier(LayerFade(active: !expanded))
+                // As in Vibe Island, the ears ride the shape's left edge: they slide out
+                // with it and fade within ~80ms when opening, and slide back in with it,
+                // appearing ~60ms in (about 60% of the way), when closing. Position follows the shape's spring.
+                .frame(width: size.width, alignment: .leading)
+                .modifier(LayerFade(active: !expanded, fadeIn: 0.15, fadeOut: 0.08, fadeInDelay: 0.06))
                 .allowsHitTesting(false)
         }
         .contentShape(shape)

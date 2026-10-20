@@ -41,8 +41,10 @@ struct LayerFade: ViewModifier {
     var active: Bool
     var fadeIn: Double = 0.15
     var fadeOut: Double = 0.1
+    var fadeInDelay: Double = 0
 
     func body(content: Content) -> some View {
-        content.animation(.easeOut(duration: active ? fadeIn : fadeOut)) { $0.opacity(active ? 1 : 0) }
+        let animation = active ? Animation.easeOut(duration: fadeIn).delay(fadeInDelay) : .easeOut(duration: fadeOut)
+        return content.animation(animation) { $0.opacity(active ? 1 : 0) }
     }
 }

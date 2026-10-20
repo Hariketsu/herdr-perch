@@ -497,14 +497,14 @@ extension PresentationState {
 | 肩膀 | 固定 6pt 内凹，画在形状外侧 |
 | 投影 | `0 2px 8px` 黑 60% + `0 8px 24px` 黑 30%；展开时加白 4% 光晕，存在 Blocked 时改为橙 15% |
 | 居中 | 居中用的外层 frame 必须在尺寸动画的作用范围内，否则位置瞬间跳到终点而宽度仍在动画（收起时横向窜动约 22pt，录屏实测） |
-| 两耳 | 鸟与 A/B/C 在两种状态都固定在原位、始终可见 |
+| 两耳 | 收起宽度的整体，左边缘钉在形状左边缘上，随形状尺寸动画移动（Vibe Island 真机：收起时宠物随左缘内移约 74pt）；展开时 0.08s 淡出，收起时延迟 0.06s 后 0.15s 淡入（形状走完约 60% 时出现，与真机一致）；淡入淡出只作用于 opacity（`.animation(_:body:)`），不接管位置 |
 | 列表层 | 只做 opacity：入 0.15s、出 0.1s，从形状变化的第一帧开始；无 blur、无缩放；始终挂载 |
 | 完成反馈 | 右耳加宽到 140，显示 ✓ 加标题，2s 后恢复 |
 | pop | scale 1.04，`spring(response: 0.3, dampingFraction: 0.5)` |
 
 其余窗口要求：
 
-- 点击穿透：收起态 `hitTest` 只在刘海与两耳形状内返回视图，其余返回 nil。
+- 点击穿透：见第 6.1 节（收起态忽略鼠标、由 monitor 加几何判断产生指针事件；展开态只在形状内接收事件）。
 - 屏幕变化：监听 `didChangeScreenParametersNotification` 立即重新定位；显示器设置只有内建刘海屏和主显示器两种。
 - 层级：`.statusBar`，`[.canJoinAllSpaces, .stationary, .fullScreenAuxiliary]`，App 为 `.accessory`。
 

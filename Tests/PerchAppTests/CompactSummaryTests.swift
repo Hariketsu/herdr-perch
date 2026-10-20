@@ -62,8 +62,8 @@ import PerchCore
     }
 
     @Test(arguments: [0, 1, 6, 12])
-    func birdCountWingsStayForty(_ total: Int) {
-        #expect(CompactSummary.make(rows(Array(repeating: .working, count: total))).wingWidth(.birdCount) == 40)
+    func birdCountWingsStayThirty(_ total: Int) {
+        #expect(CompactSummary.make(rows(Array(repeating: .working, count: total))).wingWidth(.birdCount) == 30)
     }
 
     @Test(arguments: [(0, 40), (1, 40), (2, 42), (5, 72), (6, 82), (9, 82)])

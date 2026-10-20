@@ -60,8 +60,11 @@ import Testing
 
     @Test func expandedWidthUsesPreferredWidthAndNeverNarrowsCollapsedState() {
         let geometry = NotchGeometry(metrics: notchedMetrics())
-        #expect(geometry.expandedSize(contentHeight: 100, wingWidth: 40).width == 400)
-        #expect(geometry.expandedSize(contentHeight: 100, wingWidth: 150).width == 486)
+        #expect(NotchGeometry.expandedWidth == 640)
+        #expect(geometry.expandedSize(contentHeight: 100, wingWidth: 40).width == NotchGeometry.expandedWidth)
+        let narrow = NotchGeometry(metrics: NotchScreenMetrics(frame: CGRect(x: 0, y: 0, width: 350, height: 600), safeAreaTop: 0))
+        // The 470pt collapsed span exceeds this screen's 326pt expanded-width cap.
+        #expect(narrow.expandedSize(contentHeight: 100, wingWidth: NotchGeometry.maxWingWidth).width == 470)
     }
 
     @Test func expandedWidthCapsAtScreenWidthMinusTwentyFour() {
@@ -69,11 +72,12 @@ import Testing
         #expect(geometry.expandedSize(contentHeight: 100, wingWidth: 40).width == 326)
     }
 
-    @Test func expandedHeightFollowsContentAndCapsAt420() {
+    @Test func expandedHeightFollowsContentAndCapsAtConfiguredMaximum() {
         let geometry = NotchGeometry(metrics: notchedMetrics())
         #expect(geometry.expandedSize(contentHeight: 0, wingWidth: 40).height == 32)
         #expect(geometry.expandedSize(contentHeight: 100, wingWidth: 40).height == 132)
-        #expect(geometry.expandedSize(contentHeight: 1000, wingWidth: 40).height == 420)
+        #expect(NotchGeometry.maxExpandedHeight == 560)
+        #expect(geometry.expandedSize(contentHeight: 1000, wingWidth: 40).height == NotchGeometry.maxExpandedHeight)
     }
 
     @Test func expandedHeightCapsAtSeventyTwoPercentOfScreenHeight() {
@@ -89,7 +93,8 @@ import Testing
 
     @Test func framesStayTopCenteredIncludingNonzeroScreenOrigins() {
         let geometry = NotchGeometry(metrics: NotchScreenMetrics(frame: CGRect(x: -1600, y: 120, width: 1512, height: 982), safeAreaTop: 0))
-        #expect(geometry.panelFrame(size: CGSize(width: 400, height: 232)) == CGRect(x: -1044, y: 870, width: 400, height: 232))
+        #expect(geometry.panelFrame(size: CGSize(width: NotchGeometry.expandedWidth, height: 232)) ==
+                CGRect(x: -1164, y: 870, width: NotchGeometry.expandedWidth, height: 232))
         #expect(geometry.panelFrame(size: CGSize(width: 270, height: 32)) == CGRect(x: -979, y: 1070, width: 270, height: 32))
         let primary = NotchGeometry(metrics: notchedMetrics())
         #expect(primary.panelFrame(size: CGSize(width: 266, height: 32)) == CGRect(x: 623, y: 950, width: 266, height: 32))
@@ -102,18 +107,21 @@ extension NotchGeometryTests {
         #expect(NotchGeometry.maxWingWidth == 140)
         #expect(NotchGeometry.canvasMargin == 36)
         let notched = NotchGeometry(metrics: notchedMetrics())
-        // The completion ears produce a 466pt shape, larger than the 400pt expanded preference.
-        #expect(notched.canvasSize == CGSize(width: 538, height: 456))
-        #expect(notched.canvasFrame == CGRect(x: 487, y: 526, width: 538, height: 456))
+        // Both screens fit the expanded preference, which exceeds the maximum ear span.
+        let size = CGSize(width: NotchGeometry.expandedWidth + 2 * NotchGeometry.canvasMargin,
+                          height: NotchGeometry.maxExpandedHeight + NotchGeometry.canvasMargin)
+        #expect(notched.canvasSize == size)
+        #expect(notched.canvasFrame == CGRect(x: 400, y: 386, width: size.width, height: size.height))
         let floating = NotchGeometry(metrics: NotchScreenMetrics(frame: screenFrame, safeAreaTop: 0))
-        #expect(floating.canvasSize == CGSize(width: 542, height: 456))
-        #expect(floating.canvasFrame == CGRect(x: 485, y: 526, width: 542, height: 456))
+        #expect(floating.canvasSize == size)
+        #expect(floating.canvasFrame == CGRect(x: 400, y: 386, width: size.width, height: size.height))
     }
 
     @Test func canvasCanBeDeterminedByExpandedWidthRatherThanEars() {
         let geometry = NotchGeometry(metrics: notchedMetrics(gap: 100))
-        // A 100pt center and two 140pt ears fit within the preferred 400pt expanded width.
-        #expect(geometry.canvasSize == CGSize(width: 472, height: 456))
+        // A 100pt center and two 140pt ears fit within the expanded-width preference.
+        #expect(geometry.canvasSize == CGSize(width: NotchGeometry.expandedWidth + 2 * NotchGeometry.canvasMargin,
+                                             height: NotchGeometry.maxExpandedHeight + NotchGeometry.canvasMargin))
     }
 
     @Test func narrowScreenClampsExpandedPreferenceBeforeAddingMargins() {
@@ -135,7 +143,9 @@ extension NotchGeometryTests {
 
     @Test func canvasStaysTopCenteredOnScreensWithNonzeroOrigins() {
         let geometry = NotchGeometry(metrics: NotchScreenMetrics(frame: CGRect(x: -1600, y: 120, width: 1512, height: 982), safeAreaTop: 0))
-        #expect(geometry.canvasFrame == CGRect(x: -1115, y: 646, width: 542, height: 456))
+        #expect(geometry.canvasFrame == CGRect(x: -1200, y: 506,
+                                              width: NotchGeometry.expandedWidth + 2 * NotchGeometry.canvasMargin,
+                                              height: NotchGeometry.maxExpandedHeight + NotchGeometry.canvasMargin))
     }
 
     @Test func canvasContainsCollapsedAndExpandedPanelFramesAcrossSupportedSizes() {
@@ -152,7 +162,7 @@ extension NotchGeometryTests {
             #expect(canvas.size == geometry.canvasSize)
             #expect(canvas.midX == metrics.frame.midX)
             #expect(canvas.maxY == metrics.frame.maxY)
-            for wing: CGFloat in [40, 42, 64, 72, 82, 88, 112, 124, 140] {
+            for wing: CGFloat in [30, 40, 42, 64, 72, 82, 88, 112, 124, 140] {
                 let collapsed = geometry.panelFrame(size: geometry.collapsedSize(wingWidth: wing))
                 #expect(canvas.contains(collapsed), "Canvas must contain collapsed frame at wing \(wing)")
                 for content: CGFloat in [0, 1, 70.8, 71, 100, 200, 388, 500, 1000] {

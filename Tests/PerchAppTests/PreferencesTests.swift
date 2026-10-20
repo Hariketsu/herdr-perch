@@ -11,7 +11,7 @@ import Testing
     }
 
     private func expectDefaults(_ preferences: Preferences) {
-        #expect(preferences.compactStyle == .dots)
+        #expect(preferences.compactStyle == .birdCount)
         #expect(preferences.listStyle == .heroAndRows)
         #expect(preferences.autoExpandOnBlocked)
         #expect(preferences.displayPlacement == .builtInNotch)
@@ -50,13 +50,13 @@ import Testing
 
     @Test func loadsLiteralKeysIndependentlyOfSave() throws {
         try withDefaults { defaults, _ in
-            defaults.set("A", forKey: "compactStyle")
+            defaults.set("B", forKey: "compactStyle")
             defaults.set("rowsOnly", forKey: "listStyle")
             defaults.set(false, forKey: "autoExpandOnBlocked")
             defaults.set("mainDisplay", forKey: "displayPlacement")
             defaults.set(true, forKey: "launchAtLogin")
             let preferences = Preferences.load(from: defaults)
-            #expect(preferences.compactStyle == .birdCount)
+            #expect(preferences.compactStyle == .dots)
             #expect(preferences.listStyle == .rowsOnly)
             #expect(!preferences.autoExpandOnBlocked)
             #expect(preferences.displayPlacement == .mainDisplay)
@@ -73,7 +73,7 @@ import Testing
             defaults.set(false, forKey: "autoExpandOnBlocked")
             defaults.set(true, forKey: "launchAtLogin")
             let preferences = Preferences.load(from: defaults)
-            #expect(preferences.compactStyle == .dots)
+            #expect(preferences.compactStyle == .birdCount)
             #expect(preferences.listStyle == .heroAndRows)
             #expect(preferences.displayPlacement == .builtInNotch)
             #expect(!preferences.autoExpandOnBlocked)
@@ -95,7 +95,7 @@ import Testing
     @Test func savingDefaultsOverwritesEarlierValues() throws {
         try withDefaults { defaults, _ in
             var preferences = Preferences()
-            preferences.compactStyle = .birdCount
+            preferences.compactStyle = .dots
             preferences.launchAtLogin = true
             preferences.followReduceMotion = true
             preferences.save(to: defaults)

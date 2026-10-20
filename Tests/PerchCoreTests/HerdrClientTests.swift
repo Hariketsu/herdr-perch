@@ -16,13 +16,6 @@ private enum RequestOperation: String, CaseIterable, Sendable {
     }
 }
 
-private final class RequestLog: @unchecked Sendable {
-    private let lock = NSLock()
-    private var requests: [FakeRequest] = []
-    func record(_ request: FakeRequest) { lock.withLock { requests.append(request) } }
-    var values: [FakeRequest] { lock.withLock { requests } }
-}
-
 @Suite("HerdrClient over isolated Unix sockets")
 struct HerdrClientTests {
     @Test func pingAndFreshConnectionPerRequest() async throws {
@@ -193,17 +186,11 @@ struct HerdrClientTests {
         let subscriptions = (0..<12_000).map {
             Subscription(type: "pane.agent_status_changed", paneID: "w1:p\($0)")
         }
-        var caughtError = false
-        do {
+        await #expect(throws: HerdrError.closedByPeer) {
             for try await _ in HerdrClient(socketPath: server.path, timeout: .seconds(1)).subscribe(subscriptions) {
                 Issue.record("A peer closed before reading cannot acknowledge subscriptions")
             }
-        } catch {
-            caughtError = true
-            // The precise errno mapping for send failure is not specified by the contract.
-            #expect(error is HerdrError)
         }
-        #expect(caughtError)
     }
 
     @Test func fragmentedLargeSnapshot() async throws {

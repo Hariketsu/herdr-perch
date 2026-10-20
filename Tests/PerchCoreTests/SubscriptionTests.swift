@@ -6,14 +6,9 @@ import PerchCore
 @Suite("Subscription stream contract")
 struct SubscriptionTests {
     @Test func startedThenEveryEventAndPaneTargetOnWire() async throws {
+        let log = RequestLog()
         let server = try FakeHerdrServer { request in
-            #expect(request.method == "events.subscribe")
-            let entries = request.params["subscriptions"] as? [[String: Any]] ?? []
-            #expect(entries.count == 2)
-            #expect(entries.contains { $0["type"] as? String == "pane.created" && $0["pane_id"] == nil })
-            #expect(entries.contains {
-                $0["type"] as? String == "pane.agent_status_changed" && $0["pane_id"] as? String == "w1:p1"
-            })
+            log.record(request)
             // Ack shape comes from /tmp/perch-exp/global.log and Herdr 0.9.5 schema.
             return FakeReply(chunks: [
                 request.result(["type": "subscription_started"]),
@@ -31,6 +26,14 @@ struct SubscriptionTests {
             for try await signal in stream { signals.append(signal) }
         }
         #expect(signals == [.started, .event, .event, .event])
+        let request = try #require(log.values.first)
+        #expect(request.method == "events.subscribe")
+        let entries = request.params["subscriptions"] as? [[String: Any]] ?? []
+        #expect(entries.count == 2)
+        #expect(entries.contains { $0["type"] as? String == "pane.created" && $0["pane_id"] == nil })
+        #expect(entries.contains {
+            $0["type"] as? String == "pane.agent_status_changed" && $0["pane_id"] as? String == "w1:p1"
+        })
     }
 
     @Test(arguments: [true, false])

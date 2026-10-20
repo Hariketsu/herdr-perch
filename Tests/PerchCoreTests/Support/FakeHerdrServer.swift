@@ -27,6 +27,7 @@ struct FakeReply: Sendable {
     var chunks: [Data] = []
     var delayBetweenChunks: Int32 = 0 // milliseconds, bounded and interrupted by stop()
     var holdOpen: Int32 = 0
+    var stream: FakeStream? = nil
 }
 
 final class FakeHerdrServer: @unchecked Sendable {
@@ -133,6 +134,24 @@ final class FakeHerdrServer: @unchecked Sendable {
                 offset += count
             }
         }
+        if let stream = reply.stream {
+            while let chunk = stream.next(whileConnected: {
+                if self.lock.withLock({ self.stopped }) { return false }
+                var byte: UInt8 = 0
+                let count = recv(fd, &byte, 1, MSG_PEEK | MSG_DONTWAIT)
+                return count != 0 && (count > 0 || errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)
+            }) {
+                var offset = 0
+                while offset < chunk.count {
+                    let count = chunk.withUnsafeBytes {
+                        send(fd, $0.baseAddress!.advanced(by: offset), chunk.count - offset, 0)
+                    }
+                    if count < 0 && errno == EINTR { continue }
+                    guard count > 0 else { return }
+                    offset += count
+                }
+            }
+        }
         pause(fd, milliseconds: reply.holdOpen)
     }
 
@@ -155,5 +174,33 @@ final class FakeHerdrServer: @unchecked Sendable {
         try? FileManager.default.removeItem(atPath: path)
         // The caller owns explicitly supplied roots; scanner tests remove those.
         if ownsRoot { try? FileManager.default.removeItem(at: root) }
+    }
+}
+
+/// A test-driven stream. Empty queues wait on a condition, and observe teardown/peer cancellation.
+final class FakeStream: @unchecked Sendable {
+    private let condition = NSCondition()
+    private var chunks: [Data] = []
+    private var finished = false
+    func send(_ data: Data) {
+        condition.lock()
+        chunks.append(data)
+        condition.broadcast()
+        condition.unlock()
+    }
+    func finish() {
+        condition.lock()
+        finished = true
+        condition.broadcast()
+        condition.unlock()
+    }
+    func next(whileConnected: () -> Bool) -> Data? {
+        condition.lock()
+        defer { condition.unlock() }
+        while chunks.isEmpty && !finished {
+            guard whileConnected() else { return nil }
+            _ = condition.wait(until: Date().addingTimeInterval(0.02))
+        }
+        return chunks.isEmpty ? nil : chunks.removeFirst()
     }
 }

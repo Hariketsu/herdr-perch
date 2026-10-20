@@ -19,12 +19,19 @@ func minimalAgent(_ pane: String = "w1:p1") -> [String: Any] {
 
 /// A bounded observation loop for test coordination, never for product timing.
 @discardableResult
-func eventually(_ predicate: @escaping @Sendable () async -> Bool) async -> Bool {
-    let deadline = ContinuousClock.now + .seconds(1)
+func eventually(within timeout: Duration = .seconds(1), _ predicate: @escaping @Sendable () async -> Bool) async -> Bool {
+    let deadline = ContinuousClock.now + timeout
     while ContinuousClock.now < deadline {
         if await predicate() { return true }
         try? await Task.sleep(for: .milliseconds(1))
     }
-    Issue.record("Test coordination did not complete within one second")
+    Issue.record("Test coordination did not complete within \(timeout)")
     return false
+}
+
+final class RequestLog: @unchecked Sendable {
+    private let lock = NSLock()
+    private var requests: [FakeRequest] = []
+    func record(_ request: FakeRequest) { lock.withLock { requests.append(request) } }
+    var values: [FakeRequest] { lock.withLock { requests } }
 }

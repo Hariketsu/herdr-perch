@@ -18,6 +18,7 @@ struct SnapshotTests {
         #expect(working.stateChangeSeq == 1)
         #expect(working.cwd == "/private/tmp")
         let blocked = try #require(snapshot.agents.first { $0.paneID == "w1:p3" })
+        #expect(blocked.title == "Fixture task title")
         #expect(blocked.agent == "omp")
         #expect(blocked.status == .blocked)
         #expect(blocked.stateLabels == ["blocked": "needs approval"])
@@ -64,11 +65,11 @@ struct SnapshotTests {
         #expect(result.panes == [PaneInfo(paneID: "valid", tabID: "t", workspaceID: "w")])
     }
 
-    // Missing agent_status/focused defaults are not specified numerically in the contract.
-    // Do not assert those values until architecture.md defines them.
     @Test func absentOptionalFields() throws {
         let result = try Snapshot.decode(response: snapshotResponse(agents: [minimalAgent()]))
         let agent = try #require(result.agents.first)
+        #expect(agent.status == .unknown)
+        #expect(!agent.focused)
         #expect(agent.stateChangeSeq == 0)
         #expect(agent.completionSeq == nil)
         #expect(agent.stateLabels == [:])
@@ -101,6 +102,15 @@ struct SnapshotTests {
         #expect(agent.stateLabels == ["blocked": "Approve"])
         #expect(agent.focused)
         #expect(agent.cwd == "/work/current")
+    }
+
+    @Test func metadataTitleOverridesTerminalTitle() throws {
+        var input = minimalAgent()
+        input["title"] = "Metadata task"
+        input["terminal_title_stripped"] = "Terminal task"
+        #expect(try Snapshot.decode(response: snapshotResponse(agents: [input])).agents.first?.title == "Metadata task")
+        input["title"] = NSNull()
+        #expect(try Snapshot.decode(response: snapshotResponse(agents: [input])).agents.first?.title == "Terminal task")
     }
 
     @Test func directoryFallback() throws {

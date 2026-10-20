@@ -66,8 +66,8 @@ struct NotchGeometry: Equatable {
 }
 
 extension NotchGeometry {
-    static let maxWingWidth: CGFloat = 112
-    static let canvasMargin: CGFloat = 24
+    static let maxWingWidth: CGFloat = 140
+    static let canvasMargin: CGFloat = 36
 
     /// Fixed panel size: large enough for every collapsed and expanded shape.
     var canvasSize: CGSize {

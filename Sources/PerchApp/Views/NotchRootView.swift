@@ -50,7 +50,6 @@ struct NotchRootView: View {
         .animation(model.reduceMotion ? nil : (expanded ? Palette.open : Palette.close), value: expanded)
         .animation(model.reduceMotion ? nil : Palette.resize, value: open.height)
         .animation(Palette.pop, value: popping)
-        .animation(Palette.hover, value: model.presentation.isHovering)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(alignment: .top) {
             // Measured off-screen so the first expanded frame already has its final height.
@@ -70,7 +69,7 @@ struct NotchRootView: View {
     private func scale(expanded: Bool) -> CGFloat {
         if expanded { return 1 }
         if popping { return 1.04 }
-        return model.presentation.isHovering ? 1.028 : 1
+        return 1
     }
 
     private func syncMount(expanded: Bool) {

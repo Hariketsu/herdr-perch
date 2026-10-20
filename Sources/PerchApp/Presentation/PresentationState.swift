@@ -15,6 +15,7 @@ enum PresentationEvent: Equatable {
     case rowActivated
     case tick
     case settingsChanged(autoExpandOnBlocked: Bool)
+    case agentFinished(title: String)
 }
 
 /// Pure reducer for the notch surface (architecture.md §6). Time is passed in;
@@ -28,11 +29,10 @@ struct PresentationState {
 
     private(set) var surface: Surface = .hidden
     private(set) var nextTick: ContinuousClock.Instant?
-    /// Pointer over the collapsed notch (including the hover-intent wait): drives the 1.028 hover scale.
-    var isHovering: Bool { pointerInside && surface == .collapsed }
+    static let completionDuration: Duration = .seconds(2)
+    var completion: String? { fatalError("unimplemented") }
     /// Bumped when a new blocked agent did not auto-expand the notch: drives the pop animation.
     private(set) var pulse = 0
-    private var pointerInside = false
     private var pending: Pending?
     private var autoExpandOnBlocked: Bool
 
@@ -41,15 +41,12 @@ struct PresentationState {
     }
 
     mutating func handle(_ event: PresentationEvent, now: ContinuousClock.Instant) {
-        if event == .pointerEntered { pointerInside = true }
-        if event == .pointerExited { pointerInside = false }
         switch (event, surface) {
         case let (.settingsChanged(enabled), _):
             autoExpandOnBlocked = enabled
 
         case (.rowsChanged(hasRows: false, _), _):
             set(.hidden)
-            pointerInside = false
         case let (.rowsChanged(true, newBlocked), .hidden):
             set(.collapsed)
             if newBlocked { autoExpandOrPulse(now) }

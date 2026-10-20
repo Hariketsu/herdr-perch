@@ -39,7 +39,6 @@ enum Palette {
     static let close = Animation.smooth(duration: 0.3)
     static let resize = Animation.smooth(duration: 0.3)
     static let pop = Animation.spring(response: 0.3, dampingFraction: 0.5)
-    static let hover = Animation.spring(response: 0.38, dampingFraction: 0.8)
 }
 
 extension Color {

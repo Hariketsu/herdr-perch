@@ -450,8 +450,8 @@ struct Preferences: Equatable {
 
 ```swift
 extension NotchGeometry {
-    static let maxWingWidth: CGFloat = 112        // C 样式 4 种状态时的耳宽（4 × 24 + 16）
-    static let canvasMargin: CGFloat = 24         // 给 pop 放大和描边留的余量
+    static let maxWingWidth: CGFloat = 140        // 完成反馈显示"✓ 标题"时的耳宽（≥ C 样式 4 种状态的 112）
+    static let canvasMargin: CGFloat = 36         // 给两层投影（0 8px 24px）和 pop 放大留的余量
     /// 固定画布：宽 = max(min(expandedWidth, frame.width − 24), centerWidth + 2 × maxWingWidth) + 2 × canvasMargin；
     /// 高 = min(maxExpandedHeight, frame.height × 0.72) + canvasMargin。面板只在屏幕变化时按它重设 frame。
     var canvasSize: CGSize { get }
@@ -470,9 +470,16 @@ struct PointerTracker {
     // 区域变化（展开、收起导致形状尺寸改变）时，调用方用当前指针位置再调一次 update。
 }
 
+enum PresentationEvent { …
+    case agentFinished(title: String)            // 某行新变为 Finished（由 NotchModel 比较前后两次的行得出）
+}
+
 extension PresentationState {
-    /// 收起态且指针在区域内时为 true（hover 意图期间也是），用于 1.028 倍的 hover 放大；离开、展开或隐藏时为 false。
-    var isHovering: Bool { get }
+    static let completionDuration: Duration = .seconds(2)
+    /// 完成反馈（对应 vibeisland 的 approved 层）：collapsed 时收到 agentFinished → completion = title，2s 后清除；
+    /// 期间再收到则替换标题并重新计时。非 collapsed 时忽略；surface 离开 collapsed（展开、隐藏）时立即清除。
+    /// nextTick 取"hover / 离开 / 自动收起的计时"与"completion 到期"中较早的一个；两者互不取消。
+    var completion: String? { get }
     /// rowsChanged(hasRows: true, newBlocked: true) 没有引起自动展开时（自动展开设置关闭，或者已经处于展开态）加 1。
     /// 视图监听它的变化，播放一次 pop 动画（放大到 1.04，spring(response: 0.3, dampingFraction: 0.5)）。
     /// 隐藏态下（hasRows 为 false）不加；从隐藏态首次出现行且带新 blocked、又没有自动展开时，先变为 collapsed 再加 1。
@@ -480,15 +487,18 @@ extension PresentationState {
 }
 ```
 
-动画参数（不进单元测试，写在 `Palette` 中）：
+视觉参数（不进单元测试）以 vibeisland.app 首页演示为准（`/tmp/vibe-ref/affiliate.*.css` 的 `.v6-notch` / `.v6-layer`，demo.js 的 `v()`）：
 
 | 用途 | 参数 |
 |---|---|
-| 展开 | `.spring(response: 0.42, dampingFraction: 0.8)` |
-| 收起 | `.smooth(duration: 0.3)` |
-| pop | `.spring(response: 0.3, dampingFraction: 0.5)` |
-| 内容淡入 | `.easeOut(duration: 0.18).delay(0.12)` |
-| 收起后内容保留 | 0.36s 后才卸载 |
+| 宽高（开与收共用） | `cubic-bezier(.175,.885,.32,1.1)`，0.5s |
+| 底角半径 | 收起 10 → 展开 14，单独走 `easeOut` 0.4s |
+| 肩膀 | 固定 6pt 内凹，画在形状外侧，不随展开变化 |
+| 投影 | `0 2px 8px` 黑 60% + `0 8px 24px` 黑 30%；展开时加 `0 0 15px` 白 4%，存在 Blocked 时改加 `0 0 20px` 橙 15% |
+| 层切换 | 非激活层 opacity 0、blur 6、scale .96；opacity 0.25s、blur 0.3s、scale 0.35s（同上曲线）；激活层延迟 60ms |
+| 完成反馈 | 右耳加宽到 140，显示 ✓ 加标题，2s 后恢复；尺寸变化走同一条宽高曲线 |
+| pop（新 blocked 未自动展开） | scale 1.04，`spring(response: 0.3, dampingFraction: 0.5)` |
+| 收起后内容保留 | 0.36s 后才卸载（覆盖 0.25s 的退场） |
 
 其余窗口要求：
 

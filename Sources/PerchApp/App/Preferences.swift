@@ -10,7 +10,7 @@ enum DisplayPlacement: String {
     case mainDisplay
 }
 
-/// The five user settings (product.md §8). Missing or unknown values fall back to defaults.
+/// User settings (product.md §8). Missing or unknown values fall back to defaults.
 struct Preferences: Equatable {
     var compactStyle: CompactStyle = .dots
     var listStyle: ListStyle = .heroAndRows
@@ -28,6 +28,7 @@ struct Preferences: Equatable {
             preferences.displayPlacement = placement
         }
         if let enabled = defaults.object(forKey: "launchAtLogin") as? Bool { preferences.launchAtLogin = enabled }
+        if let enabled = defaults.object(forKey: "followReduceMotion") as? Bool { preferences.followReduceMotion = enabled }
         return preferences
     }
 
@@ -37,5 +38,6 @@ struct Preferences: Equatable {
         defaults.set(autoExpandOnBlocked, forKey: "autoExpandOnBlocked")
         defaults.set(displayPlacement.rawValue, forKey: "displayPlacement")
         defaults.set(launchAtLogin, forKey: "launchAtLogin")
+        defaults.set(followReduceMotion, forKey: "followReduceMotion")
     }
 }

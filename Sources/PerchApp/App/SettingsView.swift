@@ -18,6 +18,7 @@ struct SettingsView: View {
                     Text("Large first row").tag(ListStyle.heroAndRows)
                     Text("Compact rows").tag(ListStyle.rowsOnly)
                 }
+                Toggle("Follow system “Reduce motion”", isOn: binding(\.followReduceMotion))
             }
             Section("Behavior") {
                 Toggle("Expand when an agent is blocked", isOn: binding(\.autoExpandOnBlocked))

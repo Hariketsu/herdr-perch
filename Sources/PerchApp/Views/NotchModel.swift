@@ -12,7 +12,9 @@ final class NotchModel {
     var geometry: NotchGeometry
     var contentHeight: CGFloat = 0
     var notice: String?
-    var reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+    var systemReduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+    /// Full motion by default; the system setting applies only when the user opts in.
+    var reduceMotion: Bool { preferences.followReduceMotion && systemReduceMotion }
     @ObservationIgnored var showSettings: () -> Void = {}
     private(set) var presentation: PresentationState
 

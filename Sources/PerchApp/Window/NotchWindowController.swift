@@ -72,7 +72,7 @@ final class NotchWindowController {
             forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: nil, queue: .main
         ) { [weak self] _ in
             MainActor.assumeIsolated {
-                self?.model.reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+                self?.model.systemReduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
             }
         })
 

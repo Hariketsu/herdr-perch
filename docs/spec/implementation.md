@@ -162,9 +162,10 @@ E2E 约束：
   - 8 个以上时的 overflow；
   - counts 只含非零项；
   - 全部 stale 时 `allStale`。
-- `NotchGeometry`（搬运 NotchAgent 测试）：有刘海与无刘海屏、刘海宽度越界时回退。
+- `NotchGeometry`（契约见 architecture.md 第 6 节；刘海检测部分可参考 NotchAgent 的 `NotchGeometryTests`）：有刘海与无刘海屏、刘海宽度越界时回退、展开尺寸的上下限与取偶、居中贴顶。
+- `CompactSummary.wingWidth`：A/B/C 三种样式的宽度公式。
 
-**实现**：搬运 `NotchPanel`、`NotchGeometry`、`NotchWindowController`（删除 terminalDisplay 跟随、`canBecomeKey`）；新写 `PresentationState`；按形状实现 hitTest。
+**实现**：搬运 `NotchPanel`、`NotchWindowController`（删除 terminalDisplay 跟随、`canBecomeKey`）；`NotchGeometry` 只保留刘海检测，尺寸按原型重写；新写 `PresentationState`；按形状实现 hitTest。
 
 **手动验收**：
 

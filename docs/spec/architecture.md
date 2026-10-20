@@ -390,12 +390,41 @@ enum PresentationEvent {
 enum CompactStyle: String { case birdCount = "A", dots = "B", counts = "C" }   // 默认 B
 struct CompactSummary: Equatable {
     var birdStatus: DisplayStatus?        // 最紧急的状态；无行时 nil
-    var dots: [DisplayStatus]             // B：每个 Agent 一个点，按 RowBuilder 顺序，最多 8 个
-    var overflow: Int                     // B：超出 8 个的数量（显示 +N）
+    var dots: [DisplayStatus]             // B：每个 Agent 一个点，按 RowBuilder 顺序，最多 maxDots(6) 个
+    var overflow: Int                     // B：超出 6 个的数量（显示 +N）
     var counts: [DisplayStatus: Int]      // C：只含数量 > 0 的状态
     var total: Int                        // A
     var allStale: Bool
+    static let maxDots = 6
     static func make(_ rows: [AgentRow]) -> CompactSummary
+    /// 每只耳朵的宽度（与原型 notch.jsx wingWidth 一致）：
+    /// A = 40；B = max(40, min(total, 6) × 10 + 22)；C = max(40, counts.count × 24 + 16)
+    func wingWidth(_ style: CompactStyle) -> CGFloat
+}
+
+struct NotchScreenMetrics: Equatable {
+    var frame: CGRect
+    var safeAreaTop: CGFloat
+    var auxiliaryTopLeftArea: CGRect?
+    var auxiliaryTopRightArea: CGRect?
+    init(screen: NSScreen)               // 产品代码使用；测试直接用成员初始化
+}
+
+struct NotchGeometry: Equatable {
+    static let fallbackBandHeight: CGFloat = 32   // 无刘海屏
+    static let floatingCenterWidth: CGFloat = 190 // 无刘海屏的中间区域
+    static let expandedWidth: CGFloat = 400
+    static let maxExpandedHeight: CGFloat = 420
+    init(metrics: NotchScreenMetrics)
+    /// safeAreaTop > 0，且 auxiliaryTopRightArea.minX − auxiliaryTopLeftArea.maxX 在 (80, 400) 之间（搬自 NotchAgent）
+    var hasNotch: Bool { get }
+    var centerWidth: CGFloat { get }     // 有刘海：上述间距；否则 floatingCenterWidth
+    var bandHeight: CGFloat { get }      // 有刘海：safeAreaTop；否则 fallbackBandHeight
+    func collapsedSize(wingWidth: CGFloat) -> CGSize                 // (centerWidth + 2 × wing, bandHeight)
+    /// 宽 = max(collapsed 宽, min(expandedWidth, frame.width − 24))；
+    /// 高 = min(bandHeight + contentHeight, maxExpandedHeight, frame.height × 0.72)，四舍五入到偶数
+    func expandedSize(contentHeight: CGFloat, wingWidth: CGFloat) -> CGSize
+    func panelFrame(size: CGSize) -> CGRect   // 水平居中于 frame.midX，顶边贴 frame.maxY
 }
 ```
 

@@ -1,3 +1,4 @@
+import CoreGraphics
 import PerchCore
 
 enum CompactStyle: String {
@@ -7,7 +8,7 @@ enum CompactStyle: String {
 }
 
 struct CompactSummary: Equatable {
-    static let maxDots = 8
+    static let maxDots = 6
 
     var birdStatus: DisplayStatus?
     var dots: [DisplayStatus]
@@ -17,4 +18,5 @@ struct CompactSummary: Equatable {
     var allStale: Bool
 
     static func make(_ rows: [AgentRow]) -> CompactSummary { fatalError("unimplemented") }
+    func wingWidth(_ style: CompactStyle) -> CGFloat { fatalError("unimplemented") }
 }

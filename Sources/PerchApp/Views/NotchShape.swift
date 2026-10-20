@@ -30,21 +30,19 @@ struct NotchShape: Shape {
     }
 }
 
-/// vibeisland's `.v6-layer` crossfade: inactive layers sit at opacity 0,
-/// blur 6, scale .96; each property has its own duration and the incoming
-/// layer starts 60ms late.
+/// Crossfade between the collapsed and expanded layers. Both start at once
+/// with the shape (a delay left the growing shape empty, or the notch blank
+/// mid-collapse), and neither scales: scaling content while the shape also
+/// clips it read as a jitter.
 struct LayerFade: ViewModifier {
     var active: Bool
     var reduceMotion: Bool
 
     func body(content: Content) -> some View {
-        let delay = active ? 0.06 : 0
         content
             .opacity(active ? 1 : 0)
-            .animation(.easeInOut(duration: 0.25).delay(delay), value: active)
-            .blur(radius: active || reduceMotion ? 0 : 6)
-            .animation(.easeInOut(duration: 0.3).delay(delay), value: active)
-            .scaleEffect(active || reduceMotion ? 1 : 0.96, anchor: .top)
-            .animation(Palette.notchCurve(0.35).delay(delay), value: active)
+            .animation(.easeOut(duration: active ? 0.2 : 0.15), value: active)
+            .blur(radius: active || reduceMotion ? 0 : 3)
+            .animation(.easeOut(duration: 0.25), value: active)
     }
 }

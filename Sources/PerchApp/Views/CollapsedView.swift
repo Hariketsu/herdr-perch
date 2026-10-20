@@ -1,8 +1,10 @@
 import PerchCore
 import SwiftUI
 
-/// The 32pt band: bird in the left ear, A/B/C summary in the right ear,
-/// the camera housing in between.
+/// The 32pt band: bird in the left ear, A/B/C summary in the right ear, the
+/// camera housing in between. It stays put and visible in both states — the
+/// expanded shape is centred and at least as wide, so the ears stay inside it.
+/// Fading them out and back in read as the controls flickering.
 struct CollapsedBand: View {
     var summary: CompactSummary
     var style: CompactStyle
@@ -22,7 +24,7 @@ struct CollapsedBand: View {
                 .frame(width: wingWidth, alignment: .trailing)
         }
         .frame(height: height)
-        .animation(Palette.size, value: completion)
+        .animation(Palette.open, value: completion)
     }
 
     @ViewBuilder private var right: some View {

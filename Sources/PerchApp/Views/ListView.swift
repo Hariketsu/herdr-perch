@@ -7,6 +7,7 @@ struct AgentList: View {
     var style: ListStyle
     var notice: String?
     var onActivate: (AgentRow) -> Void
+    var onSettings: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -34,8 +35,22 @@ struct AgentList: View {
                     }
                 }
             }
+            // Settings live in the notch too: menu-bar managers like Ice can hide or
+            // displace the status item behind the notch, making it unreachable.
+            HStack {
+                Spacer()
+                Button(action: onSettings) {
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 11))
+                        .frame(width: 22, height: 18)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(FooterButtonStyle())
+                .help("Settings")
+            }
+            .padding(.top, 4)
         }
-        .padding(EdgeInsets(top: 2, leading: 24, bottom: 14, trailing: 24))
+        .padding(EdgeInsets(top: 2, leading: 24, bottom: 10, trailing: 24))
     }
 }
 
@@ -145,6 +160,18 @@ private struct RowButtonStyle: ButtonStyle {
             .environment(\.rowHovered, hovered)
             .background(.white.opacity(hovered ? 0.08 : highlighted ? 0.06 : 0), in: RoundedRectangle(cornerRadius: 7))
             .contentShape(Rectangle())
+            .onHover { hovered = $0 }
+            .animation(.easeOut(duration: 0.15), value: hovered)
+    }
+}
+
+private struct FooterButtonStyle: ButtonStyle {
+    @State private var hovered = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundStyle(.white.opacity(hovered ? 0.8 : 0.4))
+            .background(.white.opacity(hovered ? 0.08 : 0), in: RoundedRectangle(cornerRadius: 5))
             .onHover { hovered = $0 }
             .animation(.easeOut(duration: 0.15), value: hovered)
     }

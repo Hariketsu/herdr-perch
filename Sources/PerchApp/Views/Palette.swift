@@ -32,10 +32,10 @@ enum Palette {
     }
 
     // Notch motion, from vibeisland.app's demo (architecture.md §6.1).
-    static func notchCurve(_ duration: Double) -> Animation {
-        .timingCurve(0.175, 0.885, 0.32, 1.1, duration: duration)
-    }
-    static let size = notchCurve(0.5)           // width/height, opening and closing alike
+    static let open = Animation.timingCurve(0.175, 0.885, 0.32, 1.1, duration: 0.5)  // growing: vibeisland's overshoot
+    /// Shrinking with the same overshoot would dip below the menu-bar height and bounce back
+    /// (measured 4.5pt on video), so closing uses the same shape of curve without overshoot.
+    static let close = Animation.timingCurve(0.175, 0.885, 0.32, 1.0, duration: 0.45)
     static let radius = Animation.easeOut(duration: 0.4)
     static let pop = Animation.spring(response: 0.3, dampingFraction: 0.5)
 }

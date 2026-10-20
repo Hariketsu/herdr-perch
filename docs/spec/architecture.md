@@ -444,6 +444,52 @@ struct Preferences: Equatable {
 }
 ```
 
+### 6.1 动效改造（v1.1，feat/notch-motion）
+
+参考 open-vibe-island（GPL-3.0）的做法：窗口固定为最大尺寸，动画全部交给 SwiftUI 的单次事务；收起态窗口忽略鼠标事件，由全局和本地 `NSEvent` monitor 加几何判断产生指针事件。这样做有两个目的：一是消除 AppKit 改 frame 与 SwiftUI spring 不同步造成的卡顿；二是收起态不拦截刘海旁边的菜单栏点击。
+
+```swift
+extension NotchGeometry {
+    static let maxWingWidth: CGFloat = 112        // C 样式 4 种状态时的耳宽（4 × 24 + 16）
+    static let canvasMargin: CGFloat = 24         // 给 pop 放大和描边留的余量
+    /// 固定画布：宽 = max(min(expandedWidth, frame.width − 24), centerWidth + 2 × maxWingWidth) + 2 × canvasMargin；
+    /// 高 = min(maxExpandedHeight, frame.height × 0.72) + canvasMargin。面板只在屏幕变化时按它重设 frame。
+    var canvasSize: CGSize { get }
+    var canvasFrame: CGRect { get }              // panelFrame(size: canvasSize)
+    // panelFrame(size:) 同时用作形状在屏幕坐标中的外接矩形（命中区域）
+}
+
+/// 由 mouseMoved / mouseDown 的屏幕坐标产生 PresentationEvent。纯逻辑。
+struct PointerTracker {
+    private(set) var isInside: Bool = false
+    /// 区域按闭区间判断（含边缘：指针贴住屏幕顶边时 y == frame.maxY，也算在内）。
+    /// 进入时返回 .pointerEntered，离开时返回 .pointerExited，状态不变时返回 nil。
+    mutating func update(location: CGPoint, region: CGRect) -> PresentationEvent?
+    /// 区域内点击 → .clicked；区域外点击且处于展开态 → .clickedOutside；否则 nil。区域同样按闭区间判断。
+    static func click(at location: CGPoint, region: CGRect, expanded: Bool) -> PresentationEvent?
+    // 区域变化（展开、收起导致形状尺寸改变）时，调用方用当前指针位置再调一次 update。
+}
+
+extension PresentationState {
+    /// 收起态且指针在区域内时为 true（hover 意图期间也是），用于 1.028 倍的 hover 放大；离开、展开或隐藏时为 false。
+    var isHovering: Bool { get }
+    /// rowsChanged(hasRows: true, newBlocked: true) 没有引起自动展开时（自动展开设置关闭，或者已经处于展开态）加 1。
+    /// 视图监听它的变化，播放一次 pop 动画（放大到 1.04，spring(response: 0.3, dampingFraction: 0.5)）。
+    /// 隐藏态下不加。
+    var pulse: Int { get }
+}
+```
+
+动画参数（不进单元测试，写在 `Palette` 中）：
+
+| 用途 | 参数 |
+|---|---|
+| 展开 | `.spring(response: 0.42, dampingFraction: 0.8)` |
+| 收起 | `.smooth(duration: 0.3)` |
+| pop | `.spring(response: 0.3, dampingFraction: 0.5)` |
+| 内容淡入 | `.easeOut(duration: 0.18).delay(0.12)` |
+| 收起后内容保留 | 0.36s 后才卸载 |
+
 其余窗口要求：
 
 - 点击穿透：收起态 `hitTest` 只在刘海与两耳形状内返回视图，其余返回 nil。

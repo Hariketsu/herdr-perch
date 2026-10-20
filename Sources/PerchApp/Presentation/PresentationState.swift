@@ -28,6 +28,8 @@ struct PresentationState {
 
     private(set) var surface: Surface = .hidden
     private(set) var nextTick: ContinuousClock.Instant?
+    var isHovering: Bool { fatalError("unimplemented") }
+    var pulse: Int { fatalError("unimplemented") }
     private var pending: Pending?
     private var autoExpandOnBlocked: Bool
 

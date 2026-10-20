@@ -64,3 +64,11 @@ struct NotchGeometry: Equatable {
                width: size.width, height: size.height)
     }
 }
+
+extension NotchGeometry {
+    static let maxWingWidth: CGFloat = 112
+    static let canvasMargin: CGFloat = 24
+
+    var canvasSize: CGSize { fatalError("unimplemented") }
+    var canvasFrame: CGRect { fatalError("unimplemented") }
+}

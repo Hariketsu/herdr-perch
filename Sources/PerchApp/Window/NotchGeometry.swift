@@ -69,6 +69,12 @@ extension NotchGeometry {
     static let maxWingWidth: CGFloat = 112
     static let canvasMargin: CGFloat = 24
 
-    var canvasSize: CGSize { fatalError("unimplemented") }
-    var canvasFrame: CGRect { fatalError("unimplemented") }
+    /// Fixed panel size: large enough for every collapsed and expanded shape.
+    var canvasSize: CGSize {
+        let width = max(min(Self.expandedWidth, metrics.frame.width - 24), centerWidth + 2 * Self.maxWingWidth)
+        let height = min(Self.maxExpandedHeight, metrics.frame.height * 0.72)
+        return CGSize(width: width + 2 * Self.canvasMargin, height: height + Self.canvasMargin)
+    }
+
+    var canvasFrame: CGRect { panelFrame(size: canvasSize) }
 }

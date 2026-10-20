@@ -7,10 +7,9 @@ struct AgentList: View {
     var style: ListStyle
     var notice: String?
     var onActivate: (AgentRow) -> Void
-    var onSettings: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 0) {
             if let notice {
                 Text(notice).font(.system(size: 10.5)).foregroundStyle(Palette.notice)
                     .padding(.horizontal, 8).padding(.top, 4).padding(.bottom, 6)
@@ -21,8 +20,9 @@ struct AgentList: View {
                     .frame(maxWidth: .infinity).padding(.top, 8).padding(.bottom, 4)
             }
             TimelineView(.periodic(from: .now, by: 30)) { context in
-                VStack(spacing: 2) {
+                VStack(spacing: 0) {
                     ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                        if index > 0 { Rectangle().fill(.white.opacity(0.055)).frame(height: 1).padding(.horizontal, 8) }
                         Button { onActivate(row) } label: {
                             if style == .heroAndRows && index == 0 {
                                 HeroRow(row: row, now: context.date)
@@ -34,22 +34,8 @@ struct AgentList: View {
                     }
                 }
             }
-            // Settings live in the notch too: menu-bar managers like Ice can hide or
-            // displace the status item behind the notch, making it unreachable.
-            HStack {
-                Spacer()
-                Button(action: onSettings) {
-                    Image(systemName: "gearshape")
-                        .font(.system(size: 11))
-                        .frame(width: 22, height: 18)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(FooterButtonStyle())
-                .help("Settings")
-            }
-            .padding(.top, 2)
         }
-        .padding(EdgeInsets(top: 4, leading: 12, bottom: 8, trailing: 12))
+        .padding(EdgeInsets(top: 2, leading: 24, bottom: 14, trailing: 24))
     }
 }
 
@@ -59,7 +45,7 @@ private struct HeroRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
-            PixelBird(status: row.status, stale: row.isStale).padding(.top, 2)
+            StatusDot(status: row.status, stale: row.isStale).scaleEffect(1.33).padding(.top, 5)
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 5) {
                     Text(row.title).font(.system(size: 12, weight: .medium)).foregroundStyle(.white)
@@ -159,18 +145,6 @@ private struct RowButtonStyle: ButtonStyle {
             .environment(\.rowHovered, hovered)
             .background(.white.opacity(hovered ? 0.08 : highlighted ? 0.06 : 0), in: RoundedRectangle(cornerRadius: 7))
             .contentShape(Rectangle())
-            .onHover { hovered = $0 }
-            .animation(.easeOut(duration: 0.15), value: hovered)
-    }
-}
-
-private struct FooterButtonStyle: ButtonStyle {
-    @State private var hovered = false
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .foregroundStyle(.white.opacity(hovered ? 0.8 : 0.4))
-            .background(.white.opacity(hovered ? 0.08 : 0), in: RoundedRectangle(cornerRadius: 5))
             .onHover { hovered = $0 }
             .animation(.easeOut(duration: 0.15), value: hovered)
     }

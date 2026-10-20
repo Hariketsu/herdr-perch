@@ -28,8 +28,11 @@ struct PresentationState {
 
     private(set) var surface: Surface = .hidden
     private(set) var nextTick: ContinuousClock.Instant?
-    var isHovering: Bool { fatalError("unimplemented") }
-    var pulse: Int { fatalError("unimplemented") }
+    /// Pointer over the collapsed notch (including the hover-intent wait): drives the 1.028 hover scale.
+    var isHovering: Bool { pointerInside && surface == .collapsed }
+    /// Bumped when a new blocked agent did not auto-expand the notch: drives the pop animation.
+    private(set) var pulse = 0
+    private var pointerInside = false
     private var pending: Pending?
     private var autoExpandOnBlocked: Bool
 
@@ -38,17 +41,22 @@ struct PresentationState {
     }
 
     mutating func handle(_ event: PresentationEvent, now: ContinuousClock.Instant) {
+        if event == .pointerEntered { pointerInside = true }
+        if event == .pointerExited { pointerInside = false }
         switch (event, surface) {
         case let (.settingsChanged(enabled), _):
             autoExpandOnBlocked = enabled
 
         case (.rowsChanged(hasRows: false, _), _):
             set(.hidden)
+            pointerInside = false
         case let (.rowsChanged(true, newBlocked), .hidden):
             set(.collapsed)
-            if newBlocked { autoExpand(now) }
+            if newBlocked { autoExpandOrPulse(now) }
         case (.rowsChanged(true, true), .collapsed):
-            autoExpand(now)
+            autoExpandOrPulse(now)
+        case (.rowsChanged(true, true), .expanded):
+            pulse += 1
 
         case (.pointerEntered, .collapsed):
             schedule(.expand, at: now + Self.hoverIntent)
@@ -73,8 +81,11 @@ struct PresentationState {
         }
     }
 
-    private mutating func autoExpand(_ now: ContinuousClock.Instant) {
-        guard autoExpandOnBlocked else { return }
+    private mutating func autoExpandOrPulse(_ now: ContinuousClock.Instant) {
+        guard autoExpandOnBlocked else {
+            pulse += 1
+            return
+        }
         set(.expanded(pinned: false, auto: true))
         schedule(.collapse, at: now + Self.autoCollapse)
     }

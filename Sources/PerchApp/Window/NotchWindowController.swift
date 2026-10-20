@@ -1,21 +1,27 @@
 // Derived from NotchAgent Sources/NotchApp/NotchWindowController.swift
 // https://github.com/ykushch/notchagent — Copyright Yuri Kushch — Apache-2.0
+// Pointer handling follows open-vibe-island Sources/OpenIslandApp/OverlayPanelController.swift
+// https://github.com/Octane0411/open-vibe-island — GPL-3.0
 // Modified by Herdr Perch.
 import AppKit
 import Observation
 import SwiftUI
 
-/// Keeps the panel frame equal to the notch shape's bounds so the menu bar
-/// around it stays clickable. Growing resizes the frame before the shape
-/// animates; shrinking resizes after (NotchAgent's ordering).
+/// The panel keeps one fixed canvas frame; every visual transition happens in
+/// SwiftUI. Resizing the window mid-spring desynchronises AppKit and SwiftUI
+/// (open-vibe-island's finding), so the frame changes only with the screen.
+///
+/// Mouse events pass through everywhere except the visible shape: collapsed,
+/// the panel ignores the mouse entirely and pointer events come from NSEvent
+/// monitors plus geometry; expanded, it accepts events only while the pointer
+/// is inside the shape.
 @MainActor
 final class NotchWindowController {
     private let model: NotchModel
     private let panel: NotchPanel
-    private var mouseMonitors: [Any] = []
+    private var tracker = PointerTracker()
+    private var monitors: [Any] = []
     private var observers: [NSObjectProtocol] = []
-    private var revision = 0
-    private var shrinkTask: Task<Void, Never>?
 
     init(model: NotchModel) {
         self.model = model
@@ -23,6 +29,7 @@ final class NotchWindowController {
         let host = FirstMouseHostingView(rootView: NotchRootView(model: model))
         host.sizingOptions = []
         panel.contentView = host
+        panel.ignoresMouseEvents = true
     }
 
     func show() {
@@ -33,15 +40,19 @@ final class NotchWindowController {
     }
 
     func tearDown() {
-        mouseMonitors.forEach(NSEvent.removeMonitor)
+        monitors.forEach(NSEvent.removeMonitor)
+        monitors.removeAll()
         observers.forEach(NotificationCenter.default.removeObserver)
+        observers.removeAll()
         panel.orderOut(nil)
     }
 
+    // MARK: Observation
+
     private func observeModel() {
         withObservationTracking {
-            _ = model.shapeSize
             _ = model.surface
+            _ = model.shapeSize
             _ = model.preferences.displayPlacement
         } onChange: { [weak self] in
             Task { @MainActor in
@@ -55,10 +66,7 @@ final class NotchWindowController {
         observers.append(NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main
         ) { [weak self] _ in
-            MainActor.assumeIsolated {
-                self?.refreshGeometry()
-                self?.apply()
-            }
+            MainActor.assumeIsolated { self?.apply() }
         })
         observers.append(NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: nil, queue: .main
@@ -67,20 +75,62 @@ final class NotchWindowController {
                 self?.model.reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
             }
         })
-        // Outside clicks collapse; monitoring mouse-down needs no Accessibility permission.
-        let mask: NSEvent.EventTypeMask = [.leftMouseDown, .rightMouseDown, .otherMouseDown]
-        let check: @MainActor () -> Void = { [weak self] in
-            guard let self, self.model.isExpanded, !self.panel.frame.contains(NSEvent.mouseLocation) else { return }
-            self.model.send(.clickedOutside)
-        }
-        if let monitor = NSEvent.addGlobalMonitorForEvents(matching: mask, handler: { _ in
-            Task { @MainActor in check() }
-        }) { mouseMonitors.append(monitor) }
-        if let monitor = NSEvent.addLocalMonitorForEvents(matching: mask, handler: { event in
-            Task { @MainActor in check() }
+
+        // Mouse monitors need no Accessibility permission. Global sees events
+        // bound for other apps (the panel usually ignores the mouse); local sees ours.
+        let moves: NSEvent.EventTypeMask = [.mouseMoved, .leftMouseDragged]
+        let clicks: NSEvent.EventTypeMask = [.leftMouseDown, .rightMouseDown, .otherMouseDown]
+        let onMove: @MainActor () -> Void = { [weak self] in self?.pointerMoved() }
+        let onClick: @MainActor () -> Void = { [weak self] in self?.pointerClicked() }
+        add(NSEvent.addGlobalMonitorForEvents(matching: moves) { _ in MainActor.assumeIsolated(onMove) })
+        add(NSEvent.addLocalMonitorForEvents(matching: moves) { event in
+            MainActor.assumeIsolated(onMove)
             return event
-        }) { mouseMonitors.append(monitor) }
+        })
+        add(NSEvent.addGlobalMonitorForEvents(matching: clicks) { _ in MainActor.assumeIsolated(onClick) })
+        add(NSEvent.addLocalMonitorForEvents(matching: clicks) { event in
+            MainActor.assumeIsolated(onClick)
+            return event
+        })
     }
+
+    private func add(_ monitor: Any?) {
+        if let monitor { monitors.append(monitor) }
+    }
+
+    // MARK: Pointer
+
+    /// Visible shape in screen coordinates.
+    private var shapeRegion: CGRect { model.geometry.panelFrame(size: model.shapeSize) }
+
+    private func pointerMoved() {
+        guard model.surface != .hidden else { return }
+        if let event = tracker.update(location: NSEvent.mouseLocation, region: shapeRegion) {
+            model.send(event)
+        }
+        panel.ignoresMouseEvents = !(model.isExpanded && tracker.isInside)
+    }
+
+    private func pointerClicked() {
+        guard model.surface != .hidden else { return }
+        let location = NSEvent.mouseLocation
+        if model.isExpanded {
+            // Clicks inside reach SwiftUI directly; only outside clicks matter here.
+            if PointerTracker.click(at: location, region: shapeRegion, expanded: true) == .clickedOutside {
+                model.send(.clickedOutside)
+            }
+        } else {
+            // Collapsed, only the camera housing opens the notch, so clicking a
+            // menu-bar icon under an ear does not also expand Perch.
+            let housing = model.geometry.panelFrame(
+                size: CGSize(width: model.geometry.centerWidth, height: model.geometry.bandHeight))
+            if PointerTracker.click(at: location, region: housing, expanded: false) == .clicked {
+                model.send(.clicked)
+            }
+        }
+    }
+
+    // MARK: Frame
 
     private func refreshGeometry() {
         let geometry = NotchGeometry(metrics: NotchScreenMetrics(screen: screen))
@@ -101,29 +151,9 @@ final class NotchWindowController {
             panel.orderOut(nil)
             return
         }
-        revision &+= 1
-        let current = revision
-        let target = frame(for: model.shapeSize)
-        shrinkTask?.cancel()
-        if !panel.isVisible || model.reduceMotion {
-            panel.setFrame(target, display: true)
-        } else {
-            // Cover both old and new shape while the spring runs, then settle on the target.
-            panel.setFrame(panel.frame.union(target), display: true)
-            shrinkTask = Task { [weak self] in
-                try? await Task.sleep(for: .milliseconds(550))
-                guard let self, !Task.isCancelled, self.revision == current else { return }
-                self.panel.setFrame(target, display: true)
-            }
-        }
+        let canvas = model.geometry.canvasFrame
+        if !NSEqualRects(panel.frame, canvas) { panel.setFrame(canvas, display: true) }
         panel.orderFrontRegardless()
-    }
-
-    /// Shape plus shoulders plus room for the shadow, which would otherwise be clipped
-    /// to a hard edge. Kept small when collapsed so the menu bar beside the ears stays clickable.
-    private func frame(for shape: CGSize) -> CGRect {
-        let margin = NotchRootView.shadowMargin(expanded: model.isExpanded)
-        let size = CGSize(width: shape.width + 2 * (NotchRootView.shoulder + margin), height: shape.height + margin)
-        return model.geometry.panelFrame(size: size)
+        pointerMoved()  // the region may have changed under a still pointer
     }
 }

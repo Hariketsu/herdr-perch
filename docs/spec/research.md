@@ -351,3 +351,19 @@ CLI：`herdr session list --json`、`herdr status --json`。没有任何版本�
 - `ping` → `{"type":"pong","version":"0.9.5","protocol":22,"capabilities":{...}}`
 - `session.snapshot` → `{"type":..., "snapshot":{version, protocol, focused_workspace_id, focused_tab_id, focused_pane_id, workspaces, tabs, panes, layouts, agents}}`
 - 错误 → `{"error":{"code":"agent_not_found","message":...}}`
+
+### 9.6 订阅对 Herdr 的开销（2026-10-20，粗测）
+
+NotchAgent 的笔记指出，Herdr 0.7 的逐 pane 状态订阅在 server 端是每 100ms 轮询一次 pane。在 0.9.5 上测 Herdr server 进程的 CPU（20s 平均，default Session 有 13 个 pane、7 个 agent；基线受本机其他负载影响，噪声约 ±0.5%）：
+
+| 方案 | Herdr CPU 增量 |
+|---|---|
+| 订阅全部 13 个 pane（当前设计） | +1.4% |
+| 只订阅 7 个 agent pane | +1.3% |
+| 只订阅全局事件 | ≈0 |
+| 250ms 轮询 snapshot | +0.9%（另加 Perch 侧解码） |
+
+- 成本主要是每条订阅连接的固定轮询循环，与 pane 数关系不大，所以缩小订阅范围收益很小。
+- 订阅里含不存在的 pane 时，错误码是 `pane_not_found`（不是 `invalid_request`），连接随即关闭。实现对所有 server 错误一视同仁，不受影响。
+- E2E 实测状态延迟 p95：working 65～72ms，blocked 78ms，idle ≤ 94ms。
+- 正式测量放在 Phase 6（Instruments，安静环境）。

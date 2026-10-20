@@ -17,7 +17,8 @@ struct CollapsedBand: View {
             PixelBird(status: summary.birdStatus, stale: summary.allStale, size: 12)
                 .padding(.leading, 9)
                 .frame(width: wingWidth, alignment: .leading)
-            Color.clear.frame(width: centerWidth)
+            // Flexible so each ear can ride its own edge of an animating shape.
+            Spacer(minLength: centerWidth)
             right
                 .padding(.trailing, 10)
                 .frame(width: wingWidth, alignment: .trailing)

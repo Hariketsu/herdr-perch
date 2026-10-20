@@ -10,6 +10,17 @@ enum Palette {
     static let offline = Color(hex: 0x444444)
     static let notice = Color(hex: 0xFBBF24)
 
+    /// Agent badge tints, keyed by the display label.
+    static func agentTint(_ label: String) -> Color? {
+        switch label {
+        case "Claude": Color(hex: 0xD97757)
+        case "Codex": Color(hex: 0xA3A3A3)
+        case "OMP": Color(hex: 0xF0506E)
+        case "OpenCode": Color(hex: 0x60A5FA)
+        default: nil
+        }
+    }
+
     static func color(_ status: DisplayStatus, stale: Bool = false) -> Color {
         if stale { return offline }
         switch status {

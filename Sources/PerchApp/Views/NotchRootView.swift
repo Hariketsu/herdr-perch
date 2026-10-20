@@ -41,6 +41,8 @@ struct NotchRootView: View {
                           centerWidth: model.geometry.centerWidth, wingWidth: model.wingWidth,
                           height: model.geometry.bandHeight)
                 .frame(width: collapsed.width)
+                .opacity(expanded ? 0 : 1)
+                .animation(.easeOut(duration: expanded ? 0.1 : 0.15), value: expanded)
                 .allowsHitTesting(false)
         }
         .contentShape(shape)
@@ -56,7 +58,7 @@ struct NotchRootView: View {
             // Measured off-screen so the first expanded frame already has its final height.
             // Only the list: expandedSize adds the notch strip (header) itself.
             AgentList(rows: model.store.rows, style: model.preferences.listStyle,
-                      notice: model.notice, onActivate: { _ in }, onSettings: {})
+                      notice: model.notice, onActivate: { _ in })
                 .frame(width: open.width)
                 .fixedSize(horizontal: false, vertical: true)
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { model.contentHeight = $0 }
@@ -81,17 +83,42 @@ struct NotchRootView: View {
     }
 }
 
-/// The list below the notch strip (the ears above it belong to the band), with settings at the bottom.
+/// Notch strip with settings on the right of the camera (as in Vibe Island), then the list.
 private struct ExpandedContent: View {
     @Bindable var model: NotchModel
     var width: CGFloat
 
     var body: some View {
         VStack(spacing: 0) {
-            Color.clear.frame(height: model.geometry.bandHeight)
+            HStack(spacing: 0) {
+                Spacer()
+                // Settings live in the notch too: menu-bar managers like Ice can hide or
+                // displace the status item behind the notch, making it unreachable.
+                Button(action: model.openSettings) {
+                    Image(systemName: "gearshape.fill")
+                        .font(.system(size: 12))
+                        .frame(width: 24, height: 24)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(HeaderButtonStyle())
+                .help("Settings")
+            }
+            .padding(.trailing, 14)
+            .frame(height: model.geometry.bandHeight)
             AgentList(rows: model.store.rows, style: model.preferences.listStyle,
-                      notice: model.notice, onActivate: model.activate, onSettings: model.openSettings)
+                      notice: model.notice, onActivate: model.activate)
         }
         .frame(width: width)
+    }
+}
+
+private struct HeaderButtonStyle: ButtonStyle {
+    @State private var hovered = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundStyle(.white.opacity(hovered ? 0.9 : 0.6))
+            .onHover { hovered = $0 }
+            .animation(.easeOut(duration: 0.12), value: hovered)
     }
 }

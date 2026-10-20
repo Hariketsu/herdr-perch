@@ -1,104 +1,81 @@
 import PerchCore
 import SwiftUI
 
-/// Expanded list: first row large (bird + title + tags + status line), others compact.
+/// Expanded list, laid out like the Vibe Island app: one row per agent with its
+/// pixel bird, a bold title over a status line, tags on the right; notices as cards.
 struct AgentList: View {
     var rows: [AgentRow]
     var style: ListStyle
     var notice: String?
     var onActivate: (AgentRow) -> Void
-    var onSettings: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if let notice {
-                Text(notice).font(.system(size: 10.5)).foregroundStyle(Palette.notice)
-                    .padding(.horizontal, 8).padding(.top, 4).padding(.bottom, 6)
-            }
+        VStack(alignment: .leading, spacing: 4) {
+            if let notice { NoticeCard(text: notice) }
             if rows.isEmpty {
                 Text("No agents in Herdr")
                     .font(.system(size: 11)).foregroundStyle(.white.opacity(0.4))
-                    .frame(maxWidth: .infinity).padding(.top, 8).padding(.bottom, 4)
+                    .frame(maxWidth: .infinity).padding(.vertical, 10)
             }
             TimelineView(.periodic(from: .now, by: 30)) { context in
-                VStack(spacing: 0) {
-                    ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                        if index > 0 { Rectangle().fill(.white.opacity(0.055)).frame(height: 1).padding(.horizontal, 8) }
+                VStack(spacing: 2) {
+                    ForEach(rows) { row in
                         Button { onActivate(row) } label: {
-                            if style == .heroAndRows && index == 0 {
-                                HeroRow(row: row, now: context.date)
-                            } else {
-                                MiniRow(row: row, now: context.date)
+                            switch style {
+                            case .heroAndRows: DetailedRow(row: row, now: context.date)
+                            case .rowsOnly: CompactRow(row: row, now: context.date)
                             }
                         }
-                        .buttonStyle(RowButtonStyle(highlighted: style == .heroAndRows && index == 0 && row.status == .finished))
+                        .buttonStyle(RowButtonStyle())
                     }
                 }
             }
-            // Settings live in the notch too: menu-bar managers like Ice can hide or
-            // displace the status item behind the notch, making it unreachable.
-            HStack {
-                Spacer()
-                Button(action: onSettings) {
-                    Image(systemName: "gearshape")
-                        .font(.system(size: 11))
-                        .frame(width: 22, height: 18)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(FooterButtonStyle())
-                .help("Settings")
-            }
-            .padding(.top, 4)
         }
-        .padding(EdgeInsets(top: 2, leading: 24, bottom: 10, trailing: 24))
+        .padding(EdgeInsets(top: 4, leading: 10, bottom: 10, trailing: 10))
     }
 }
 
-private struct HeroRow: View {
+/// Two-line row: bird | title / status line | tags.
+private struct DetailedRow: View {
     var row: AgentRow
     var now: Date
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
-            StatusDot(status: row.status, stale: row.isStale).scaleEffect(1.33).padding(.top, 5)
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 5) {
-                    Text(row.title).font(.system(size: 12, weight: .medium)).foregroundStyle(.white)
-                        .lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
-                    Tags(row: row, now: now)
-                }
-                HStack(spacing: 5) {
-                    if row.status == .blocked && !row.isStale {
-                        LayerLoop(kind: .throb(period: 1.5)) { Circle().fill(Palette.alert).frame(width: 5, height: 5) }
-                    }
-                    Text(statusLine(row)).font(.system(size: 10.5)).lineLimit(1)
-                }
-                .foregroundStyle(row.isStale ? Color(hex: 0x666666) : Palette.color(row.status))
+            PixelBird(status: row.status, stale: row.isStale, size: 13).padding(.top, 3)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(row.title).font(.system(size: 13, weight: .semibold)).foregroundStyle(.white)
+                    .lineLimit(1)
+                Text(statusLine(row)).font(.system(size: 11.5)).lineLimit(1)
+                    .foregroundStyle(row.isStale ? Color(hex: 0x666666) : Palette.color(row.status))
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            Tags(row: row, now: now).padding(.top, 1)
             Affordance()
         }
-        .padding(8)
+        .padding(.horizontal, 10).padding(.vertical, 8)
     }
 }
 
-private struct MiniRow: View {
+/// Single-line row for denser lists.
+private struct CompactRow: View {
     var row: AgentRow
     var now: Date
 
     var body: some View {
         HStack(spacing: 8) {
-            StatusDot(status: row.status, stale: row.isStale)
-            Text(row.title).font(.system(size: 11.5)).foregroundStyle(.white.opacity(0.75))
+            PixelBird(status: row.status, stale: row.isStale, size: 10)
+            Text(row.title).font(.system(size: 12, weight: .medium)).foregroundStyle(.white.opacity(0.85))
                 .lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
             if row.status == .blocked || row.status == .finished {
                 Text(row.status == .blocked ? "Input" : "Done")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.system(size: 10.5, weight: .semibold))
                     .foregroundStyle(row.isStale ? Color(hex: 0x666666) : Palette.color(row.status))
             }
             Tags(row: row, now: now)
             Affordance()
         }
-        .padding(.horizontal, 8).padding(.vertical, 5)
+        .padding(.horizontal, 10).padding(.vertical, 6)
     }
 }
 
@@ -108,37 +85,53 @@ private struct Tags: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            Tag(text: row.agentLabel)
+            Tag(text: row.agentLabel, tint: Palette.agentTint(row.agentLabel))
             if let project = row.project { Tag(text: project) }
-            if row.showsSessionTag { Tag(text: row.session, outlined: true) }
+            if row.showsSessionTag { Tag(text: row.session) }
             Text(Self.duration(since: row.since, now: now))
-                .font(.system(size: 9).monospacedDigit()).foregroundStyle(.white.opacity(0.5))
-                .frame(minWidth: 22, alignment: .trailing)
+                .font(.system(size: 10).monospacedDigit()).foregroundStyle(.white.opacity(0.45))
+                .frame(minWidth: 24, alignment: .trailing)
         }
         .fixedSize()
     }
 
     static func duration(since: Date, now: Date) -> String {
         let minutes = max(0, Int((now.timeIntervalSince(since) / 60).rounded()))
-        if minutes < 1 { return "now" }
+        if minutes < 1 { return "<1m" }
         if minutes < 60 { return "\(minutes)m" }
         let hours = minutes / 60
         return hours < 24 ? "\(hours)h" : "\(hours / 24)d"
     }
 }
 
+/// Small rounded label; agents get a tinted one like Vibe Island's agent badges.
 private struct Tag: View {
     var text: String
-    var outlined = false
+    var tint: Color?
 
     var body: some View {
-        Text(text).font(.system(size: 9, weight: .medium))
-            .foregroundStyle(.white.opacity(outlined ? 0.6 : 0.5))
+        Text(text).font(.system(size: 9.5, weight: .medium))
+            .foregroundStyle(tint ?? .white.opacity(0.55))
             .padding(.horizontal, 5).padding(.vertical, 2)
-            .background(.white.opacity(outlined ? 0.05 : 0.1), in: RoundedRectangle(cornerRadius: 4))
-            .overlay {
-                if outlined { RoundedRectangle(cornerRadius: 4).strokeBorder(.white.opacity(0.12)) }
-            }
+            .background((tint ?? .white).opacity(tint == nil ? 0.1 : 0.16), in: RoundedRectangle(cornerRadius: 4))
+    }
+}
+
+/// Amber card for connection and jump notices (Vibe Island shows hints as cards).
+private struct NoticeCard: View {
+    var text: String
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 11))
+                .foregroundStyle(Palette.notice)
+            Text(text).font(.system(size: 11.5, weight: .medium)).foregroundStyle(.white.opacity(0.85))
+                .lineLimit(2)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 9)
+        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
+        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.white.opacity(0.06)))
     }
 }
 
@@ -147,33 +140,22 @@ private struct Affordance: View {
     @Environment(\.rowHovered) private var hovered
 
     var body: some View {
-        Text("↗").font(.system(size: 12)).foregroundStyle(.white.opacity(hovered ? 0.5 : 0)).frame(width: 10)
+        Image(systemName: "arrow.up.right").font(.system(size: 9, weight: .semibold))
+            .foregroundStyle(.white.opacity(hovered ? 0.55 : 0)).frame(width: 12).padding(.top, 3)
     }
 }
 
 private struct RowButtonStyle: ButtonStyle {
-    var highlighted: Bool
     @State private var hovered = false
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .environment(\.rowHovered, hovered)
-            .background(.white.opacity(hovered ? 0.08 : highlighted ? 0.06 : 0), in: RoundedRectangle(cornerRadius: 7))
+            .background(.white.opacity(configuration.isPressed ? 0.1 : hovered ? 0.06 : 0),
+                        in: RoundedRectangle(cornerRadius: 10))
             .contentShape(Rectangle())
             .onHover { hovered = $0 }
-            .animation(.easeOut(duration: 0.15), value: hovered)
-    }
-}
-
-private struct FooterButtonStyle: ButtonStyle {
-    @State private var hovered = false
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .foregroundStyle(.white.opacity(hovered ? 0.8 : 0.4))
-            .background(.white.opacity(hovered ? 0.08 : 0), in: RoundedRectangle(cornerRadius: 5))
-            .onHover { hovered = $0 }
-            .animation(.easeOut(duration: 0.15), value: hovered)
+            .animation(.easeOut(duration: 0.12), value: hovered)
     }
 }
 
@@ -188,6 +170,6 @@ func statusLine(_ row: AgentRow) -> String {
     case .blocked: return "Needs your input"
     case .finished: return "Done — click to jump"
     case .working: return "Working"
-    case .idle: return row.isUnrecognized ? "Unrecognized" : "Idle"
+    case .idle: return row.isUnrecognized ? "Unrecognized" : "Ready"
     }
 }

@@ -1,10 +1,9 @@
 import PerchCore
 import SwiftUI
 
-/// The 32pt band: bird in the left ear, A/B/C summary in the right ear, the
-/// camera housing in between. It stays put and visible in both states — the
-/// expanded shape is centred and at least as wide, so the ears stay inside it.
-/// Fading them out and back in read as the controls flickering.
+/// The collapsed band: small bird in the left ear, A/B/C summary in the right
+/// ear, the camera housing in between. Like Vibe Island it fades out as the
+/// notch opens (the bird reappears on each row) and back in as it closes.
 struct CollapsedBand: View {
     var summary: CompactSummary
     var style: CompactStyle
@@ -15,12 +14,12 @@ struct CollapsedBand: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            PixelBird(status: summary.birdStatus, stale: summary.allStale)
-                .padding(.leading, 14)
+            PixelBird(status: summary.birdStatus, stale: summary.allStale, size: 12)
+                .padding(.leading, 9)
                 .frame(width: wingWidth, alignment: .leading)
             Color.clear.frame(width: centerWidth)
             right
-                .padding(.trailing, 13)
+                .padding(.trailing, 10)
                 .frame(width: wingWidth, alignment: .trailing)
         }
         .frame(height: height)
@@ -38,13 +37,11 @@ struct CollapsedBand: View {
         } else if summary.total > 0 {
             switch style {
             case .birdCount:
+                // Vibe Island's Clean style: a bare number.
                 let urgent = summary.counts[.blocked, default: 0] > 0 && !summary.allStale
                 Text("\(summary.total)")
-                    .font(.system(size: 10, weight: .semibold).monospacedDigit())
-                    .foregroundStyle(urgent ? Palette.alertBright : .white.opacity(0.7))
-                    .padding(.horizontal, 6).padding(.vertical, 1)
-                    .background(urgent ? Palette.alert.opacity(0.2) : .white.opacity(0.12),
-                                in: RoundedRectangle(cornerRadius: 4))
+                    .font(.system(size: 12, weight: .semibold).monospacedDigit())
+                    .foregroundStyle(urgent ? Palette.alertBright : .white.opacity(summary.allStale ? 0.4 : 0.92))
             case .dots:
                 HStack(spacing: 4) {
                     ForEach(Array(summary.dots.enumerated()), id: \.offset) { _, status in

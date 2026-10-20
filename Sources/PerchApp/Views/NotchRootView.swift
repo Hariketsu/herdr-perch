@@ -43,12 +43,15 @@ struct NotchRootView: View {
                 .frame(width: collapsed.width)
                 .allowsHitTesting(false)
         }
-        .animation(motion ? (expanded ? Palette.open : Palette.close) : nil, value: size)
         .contentShape(shape)
         .onTapGesture { if expanded { model.send(.clicked) } }   // collapsed clicks come from the monitor
         .scaleEffect(popping && !expanded ? 1.04 : 1, anchor: .top)
-        .animation(Palette.pop, value: popping)
+        // The centring frame must sit inside the animations: otherwise the shape's
+        // position jumps to its final x while its width animates, and the notch
+        // lurches ~22pt sideways at the start of collapsing (measured on video).
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .animation(motion ? (expanded ? Palette.open : Palette.close) : nil, value: size)
+        .animation(Palette.pop, value: popping)
         .background(alignment: .top) {
             // Measured off-screen so the first expanded frame already has its final height.
             // Only the list: expandedSize adds the notch strip (header) itself.

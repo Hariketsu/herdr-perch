@@ -16,6 +16,7 @@ import Testing
         #expect(preferences.autoExpandOnBlocked)
         #expect(preferences.displayPlacement == .builtInNotch)
         #expect(!preferences.launchAtLogin)
+        #expect(preferences.followReduceMotion == false)
     }
 
     @Test func defaultsAndMissingKeys() throws {
@@ -25,7 +26,7 @@ import Testing
         }
     }
 
-    @Test func allFiveKeysAndRoundTrip() throws {
+    @Test func allSixKeysAndRoundTrip() throws {
         try withDefaults { defaults, name in
             var preferences = Preferences()
             preferences.compactStyle = .counts
@@ -33,15 +34,17 @@ import Testing
             preferences.autoExpandOnBlocked = false
             preferences.displayPlacement = .mainDisplay
             preferences.launchAtLogin = true
+            preferences.followReduceMotion = true
             preferences.save(to: defaults)
             #expect(Preferences.load(from: defaults) == preferences)
             let persisted = try #require(defaults.persistentDomain(forName: name))
-            #expect(Set(persisted.keys) == ["compactStyle", "listStyle", "autoExpandOnBlocked", "displayPlacement", "launchAtLogin"])
+            #expect(Set(persisted.keys) == ["compactStyle", "listStyle", "autoExpandOnBlocked", "displayPlacement", "launchAtLogin", "followReduceMotion"])
             #expect(defaults.string(forKey: "compactStyle") == "C")
             #expect(defaults.string(forKey: "listStyle") == "rowsOnly")
             #expect(defaults.object(forKey: "autoExpandOnBlocked") as? Bool == false)
             #expect(defaults.string(forKey: "displayPlacement") == "mainDisplay")
             #expect(defaults.object(forKey: "launchAtLogin") as? Bool == true)
+            #expect(defaults.object(forKey: "followReduceMotion") as? Bool == true)
         }
     }
 
@@ -58,6 +61,7 @@ import Testing
             #expect(!preferences.autoExpandOnBlocked)
             #expect(preferences.displayPlacement == .mainDisplay)
             #expect(preferences.launchAtLogin)
+            #expect(preferences.followReduceMotion == false) // Existing five-key preferences omit the new key.
         }
     }
 
@@ -93,6 +97,7 @@ import Testing
             var preferences = Preferences()
             preferences.compactStyle = .birdCount
             preferences.launchAtLogin = true
+            preferences.followReduceMotion = true
             preferences.save(to: defaults)
             Preferences().save(to: defaults)
             expectDefaults(Preferences.load(from: defaults))

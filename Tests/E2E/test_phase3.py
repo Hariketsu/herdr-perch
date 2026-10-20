@@ -7,7 +7,7 @@ import time
 
 import pytest
 
-from herdr_support import HerdrEvents, herdr_environment, rows_for_session, wait_until
+from herdr_support import HerdrEvents, rows_for_session, wait_until
 
 
 @pytest.mark.parametrize("state", ["working", "blocked", "idle"])
@@ -31,6 +31,7 @@ def test_status_latency_p95_uses_herdr_event_as_baseline(herdr_session, watch, s
         events.close()
     assert len(samples) == 20
     p95 = sorted(samples)[math.ceil(0.95 * len(samples)) - 1]
+    print(f"{state} p95 latency: {p95 * 1000:.1f} ms ({len(samples)} samples)")
     assert p95 <= 0.300, f"{state} p95 latency was {p95:.3f}s"
 
 
@@ -120,10 +121,8 @@ def test_dump_matches_agent_list_for_only_the_test_session(perchctl, herdr_sessi
     snapshot = session.snapshot()
     expected = next(a for a in snapshot["agents"] if a["pane_id"] == session.pane)
     assert expected["agent_status"] == "blocked"
-    listed = subprocess.run(["herdr", "--session", session.name, "agent", "list"], env=herdr_environment(),
-                            capture_output=True, text=True, check=True, timeout=5)
-    listed_json = json.loads(listed.stdout)
-    agents = listed_json["agents"]
+    # rpc unwraps result and connects directly to this fixture's named-session socket.
+    agents = session.rpc("agent.list")["agents"]
     dumped = subprocess.run([str(perchctl), "dump"], capture_output=True, text=True, check=True, timeout=10)
     lines = dumped.stdout.splitlines()
     assert len(lines) == 1

@@ -132,5 +132,5 @@ Perch 展示 4 种状态，全部由 Herdr 的 `agent_status` 直接映射：
 
 - 状态与 `herdr agent list` 保持一致。事件流健康时，状态延迟不超过 Herdr 事件 + 300ms（p95）；事件流断开时不超过 1s。
 - 空闲时 CPU 平均低于 0.5%，内存低于 60MB。
-- Herdr 停止、重启、新建或删除 Session 时，App 不崩溃、不卡死；Session 增删在 1.5s 内反映，卡死在 3s 内显示为 stale。
+- Herdr 停止、重启、新建或删除 Session 时，App 不崩溃、不卡死；Session 增删在 1.5s 内反映，卡死在 6s 内显示为 stale。
 - 冒烟、单元、端到端三类测试全部通过（implementation.md）。

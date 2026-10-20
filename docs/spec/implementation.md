@@ -140,7 +140,7 @@ E2E 约束：
 | 新 pane / 新 agent | 新建 tab 并报 working，无需等待兜底轮询即可在 ≤300ms 内出现 |
 | Session 新增 | 启动另一个 `perch-e2e-2` server，≤1.5s 内出现（测试结束时清理） |
 | Session 停止 | `herdr session stop`，≤1.5s 内该 Session 的行全部消失 |
-| 卡死与恢复 | 用 `kill -STOP` 暂停 `perch-e2e` server 进程 → ≤3s 内行变为 stale；`kill -CONT` 后 ≤3s 回到 live（只针对测试 server 的 pid） |
+| 卡死与恢复 | 用 `kill -STOP` 暂停 `perch-e2e` server 进程 → ≤6s 内行变为 stale；`kill -CONT` 后 ≤3s 回到 live（只针对测试 server 的 pid） |
 | 跳转 | `perchctl jump perch-e2e <pane>` 后，snapshot 中 `focused_pane_id` 为该 pane；若目标在其他 tab，`focused_tab_id` 随之改变 |
 | 一致性 | `perchctl dump` 中 `perch-e2e` 的行与 `herdr agent list`（指向该 Session）逐项一致 |
 

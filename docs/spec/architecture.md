@@ -234,7 +234,7 @@ public struct AgentRow: Identifiable, Equatable, Sendable {
     public var isUnrecognized: Bool               // agent_status == unknown
     public var title: String                      // name ?? title ?? displayAgent ?? agent
     public var subtitle: String?                  // stateLabels[原始状态] ?? title（与 title 相同时为 nil）
-    public var agentLabel: String                 // displayAgent ?? 已知映射（claude→Claude…）?? agent
+    public var agentLabel: String                 // displayAgent ?? 已知映射 ?? agent；映射：claude→Claude, codex→Codex, omp→OMP, opencode→OpenCode
     public var project: String?                   // cwd 的最后一级目录名
     public var since: Date                        // StatusClock 记录的进入当前状态的时间
     public var session: String
@@ -328,7 +328,7 @@ public struct Jumper: Sendable {
 |---|---|
 | `perchctl dump [--root <dir>]` | 扫描、每个 Session 一次 snapshot，输出一行上述 JSON 后退出 |
 | `perchctl watch [--root <dir>]` | 运行完整 Runtime，每次变化输出一行 JSON（与 StateTrace 同格式） |
-| `perchctl jump <session> <pane>` | 执行 Jumper（不激活终端 App），输出 outcome |
+| `perchctl jump <session> <pane>` | 执行 Jumper（不激活终端 App），输出一行 `{"outcome":"focused"|"needsAttach"|"failed","message":<String?>}`；`focused` 时退出码 0，否则 1；找不到该行时 outcome 为 `failed` |
 
 ## 5. Session 生命周期
 
@@ -341,7 +341,7 @@ public struct Jumper: Sendable {
 ```
 
 - Session 停止：事件流立即断开 → 刷新失败进入 stale → 270ms 内 socket 被删除 → 下一次扫描（≤1s）移除。目标 1.5s 内行淡出。
-- Herdr 卡死（接受连接但不回应）：2s 超时进入 stale，UI 不冻结。
+- Herdr 卡死（接受连接但不回应）：事件流不会断开，只能靠兜底轮询发现，最坏 3s 间隔 + 2s 超时，目标 6s 内进入 stale，UI 不冻结。
 
 ## 6. 窗口与呈现（`PerchApp`）
 

@@ -41,8 +41,7 @@ struct NotchRootView: View {
                           centerWidth: model.geometry.centerWidth, wingWidth: model.wingWidth,
                           height: model.geometry.bandHeight)
                 .frame(width: collapsed.width)
-                .opacity(expanded ? 0 : 1)
-                .animation(.easeOut(duration: expanded ? 0.1 : 0.15), value: expanded)
+                .modifier(LayerFade(active: !expanded))
                 .allowsHitTesting(false)
         }
         .contentShape(shape)

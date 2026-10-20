@@ -30,15 +30,19 @@ struct NotchShape: Shape {
     }
 }
 
-/// The list layer's fade, as in the Vibe Island app: opacity only, starting with
-/// the shape on the first frame (~125ms in). No blur or scale — scaling content
-/// while the shape also clips it read as a jitter.
+/// A layer's fade, as in the Vibe Island app: opacity only, starting with the
+/// shape on the first frame. No blur or scale — scaling content while the shape
+/// also clips it read as a jitter.
+///
+/// The animation is scoped to the opacity. A plain `.animation(_:value:)` here
+/// would also take over the layer's position, which the parent's spring moves:
+/// two curves fighting made the ears slide sideways while collapsing.
 struct LayerFade: ViewModifier {
     var active: Bool
+    var fadeIn: Double = 0.15
+    var fadeOut: Double = 0.1
 
     func body(content: Content) -> some View {
-        content
-            .opacity(active ? 1 : 0)
-            .animation(.easeOut(duration: active ? 0.15 : 0.1), value: active)
+        content.animation(.easeOut(duration: active ? fadeIn : fadeOut)) { $0.opacity(active ? 1 : 0) }
     }
 }

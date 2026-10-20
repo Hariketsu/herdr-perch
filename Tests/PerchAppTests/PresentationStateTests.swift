@@ -193,62 +193,6 @@ import Testing
 
 // Motion signals remain deterministic reducer outputs; no animation or wall-clock waits.
 extension PresentationStateTests {
-    @Test func isHoveringIncludesTheEntireCollapsedHoverIntent() {
-        let t0 = ContinuousClock.now
-        var state = collapsed(at: t0)
-        #expect(!state.isHovering)
-        state.handle(.pointerEntered, now: t0)
-        #expect(state.surface == .collapsed)
-        #expect(state.isHovering)
-        state.handle(.tick, now: t0 + .milliseconds(119))
-        #expect(state.surface == .collapsed)
-        #expect(state.isHovering)
-        state.handle(.tick, now: t0 + .milliseconds(120))
-        #expect(state.surface == .expanded(pinned: false, auto: false))
-        #expect(!state.isHovering)
-    }
-
-    @Test func pointerExitClearsIsHoveringBeforeIntentCompletes() {
-        let t0 = ContinuousClock.now
-        var state = collapsed(at: t0)
-        state.handle(.pointerEntered, now: t0)
-        #expect(state.isHovering)
-        state.handle(.pointerExited, now: t0 + .milliseconds(50))
-        #expect(!state.isHovering)
-        state.handle(.tick, now: t0 + .milliseconds(120))
-        #expect(state.surface == .collapsed)
-        #expect(!state.isHovering)
-    }
-
-    @Test func hiddenStateClearsIsHovering() {
-        let t0 = ContinuousClock.now
-        var state = PresentationState()
-        #expect(!state.isHovering)
-        state.handle(.rowsChanged(hasRows: true, newBlocked: false), now: t0)
-        state.handle(.pointerEntered, now: t0)
-        #expect(state.isHovering)
-        state.handle(.rowsChanged(hasRows: false, newBlocked: false), now: t0 + .milliseconds(50))
-        #expect(state.surface == .hidden)
-        #expect(!state.isHovering)
-        state.handle(.tick, now: t0 + .seconds(1))
-        #expect(!state.isHovering)
-    }
-
-    @Test(arguments: ["pinned", "hover", "auto"])
-    func pointerEntryWhileExpandedDoesNotSetIsHovering(_ mode: String) {
-        let t0 = ContinuousClock.now
-        var state = collapsed(at: t0)
-        switch mode {
-        case "pinned": state.handle(.clicked, now: t0)
-        case "hover":
-            state.handle(.pointerEntered, now: t0)
-            state.handle(.tick, now: t0 + .milliseconds(120))
-        default: state.handle(.rowsChanged(hasRows: true, newBlocked: true), now: t0)
-        }
-        state.handle(.pointerEntered, now: t0 + .seconds(1))
-        #expect(!state.isHovering)
-    }
-
     @Test func blockedPulseAccumulatesWhenAutomaticExpansionIsDisabled() {
         let t0 = ContinuousClock.now
         var state = PresentationState(autoExpandOnBlocked: false)

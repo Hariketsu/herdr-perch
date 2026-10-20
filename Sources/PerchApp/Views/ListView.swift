@@ -145,6 +145,8 @@ private struct Affordance: View {
     }
 }
 
+/// Hover highlight switches instantly: an animated fade re-rendered the list for
+/// every frame of the transition each time the pointer crossed a row (perf.sh).
 private struct RowButtonStyle: ButtonStyle {
     @State private var hovered = false
 
@@ -155,7 +157,6 @@ private struct RowButtonStyle: ButtonStyle {
                         in: RoundedRectangle(cornerRadius: 10))
             .contentShape(Rectangle())
             .onHover { hovered = $0 }
-            .animation(.easeOut(duration: 0.12), value: hovered)
     }
 }
 

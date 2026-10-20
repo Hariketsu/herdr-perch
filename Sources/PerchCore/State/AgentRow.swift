@@ -3,7 +3,14 @@ import Foundation
 public enum DisplayStatus: Int, Comparable, Sendable {
     case blocked = 0, finished, working, idle
 
-    public init(_ status: AgentStatus) { fatalError("unimplemented") }
+    public init(_ status: AgentStatus) {
+        switch status {
+        case .blocked: self = .blocked
+        case .done: self = .finished
+        case .working: self = .working
+        case .idle, .unknown: self = .idle
+        }
+    }
 
     public static func < (lhs: DisplayStatus, rhs: DisplayStatus) -> Bool { lhs.rawValue < rhs.rawValue }
 }

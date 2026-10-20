@@ -284,7 +284,8 @@ public actor SessionRegistry {
                 now: @escaping @Sendable () -> Date = { Date() },
                 onChange: @escaping @Sendable ([SessionState]) -> Void)
     public func start()                  // 每 scanInterval 调用一次 scanOnce
-    public func stop()
+    public func stop() async             // 停止扫描与全部 Runtime
+    public func refreshAll() async       // 对所有 Runtime 请求一次刷新
     public func scanOnce() async         // 一次完整的扫描 / 接入 / 移除（测试直接调用）
     public var sessions: [SessionState] { get }   // 顺序同 SessionScanner
 }

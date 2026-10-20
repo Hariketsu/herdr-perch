@@ -31,7 +31,7 @@ struct CompactSummary: Equatable {
     /// Per-ear width, matching docs/prototype notch.jsx `wingWidth`.
     func wingWidth(_ style: CompactStyle) -> CGFloat {
         switch style {
-        case .birdCount: 40
+        case .birdCount: 30
         case .dots: max(40, CGFloat(min(total, Self.maxDots) * 10 + 22))
         case .counts: max(40, CGFloat(counts.count * 24 + 16))
         }

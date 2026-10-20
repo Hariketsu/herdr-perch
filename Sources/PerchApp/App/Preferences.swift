@@ -12,7 +12,7 @@ enum DisplayPlacement: String {
 
 /// User settings (product.md §8). Missing or unknown values fall back to defaults.
 struct Preferences: Equatable {
-    var compactStyle: CompactStyle = .dots
+    var compactStyle: CompactStyle = .birdCount
     var listStyle: ListStyle = .heroAndRows
     var autoExpandOnBlocked = true
     var displayPlacement: DisplayPlacement = .builtInNotch

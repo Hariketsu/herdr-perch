@@ -387,7 +387,7 @@ enum PresentationEvent {
 | 行被点击（跳转） | `collapsed` |
 
 ```swift
-enum CompactStyle: String { case birdCount = "A", dots = "B", counts = "C" }   // 默认 B
+enum CompactStyle: String { case birdCount = "A", dots = "B", counts = "C" }   // 默认 A（2026-10-20 改，贴近 Vibe Island）
 struct CompactSummary: Equatable {
     var birdStatus: DisplayStatus?        // 最紧急的状态；无行时 nil
     var dots: [DisplayStatus]             // B：每个 Agent 一个点，按 RowBuilder 顺序，最多 maxDots(6) 个
@@ -398,7 +398,7 @@ struct CompactSummary: Equatable {
     static let maxDots = 6
     static func make(_ rows: [AgentRow]) -> CompactSummary
     /// 每只耳朵的宽度（与原型 notch.jsx wingWidth 一致）：
-    /// A = 40；B = max(40, min(total, 6) × 10 + 22)；C = max(40, counts.count × 24 + 16)
+    /// A = 30（Vibe Island 的 Clean 样式：小宠物 + 数字）；B = max(40, min(total, 6) × 10 + 22)；C = max(40, counts.count × 24 + 16)
     func wingWidth(_ style: CompactStyle) -> CGFloat
 }
 
@@ -413,8 +413,8 @@ struct NotchScreenMetrics: Equatable {
 struct NotchGeometry: Equatable {
     static let fallbackBandHeight: CGFloat = 32   // 无刘海屏
     static let floatingCenterWidth: CGFloat = 190 // 无刘海屏的中间区域
-    static let expandedWidth: CGFloat = 400
-    static let maxExpandedHeight: CGFloat = 420
+    static let expandedWidth: CGFloat = 640       // Vibe Island 默认 Max Panel Width
+    static let maxExpandedHeight: CGFloat = 560   // Vibe Island 默认 Max Panel Height
     init(metrics: NotchScreenMetrics)
     /// safeAreaTop > 0，且 auxiliaryTopRightArea.minX − auxiliaryTopLeftArea.maxX 在 (80, 400) 之间（搬自 NotchAgent）
     var hasNotch: Bool { get }
@@ -432,7 +432,7 @@ struct NotchGeometry: Equatable {
 enum ListStyle: String { case heroAndRows, rowsOnly }                    // 默认 heroAndRows
 enum DisplayPlacement: String { case builtInNotch, mainDisplay }         // 默认 builtInNotch
 struct Preferences: Equatable {
-    var compactStyle: CompactStyle = .dots
+    var compactStyle: CompactStyle = .birdCount
     var listStyle: ListStyle = .heroAndRows
     var autoExpandOnBlocked = true
     var displayPlacement: DisplayPlacement = .builtInNotch

@@ -25,8 +25,8 @@ struct NotchScreenMetrics: Equatable {
 struct NotchGeometry: Equatable {
     static let fallbackBandHeight: CGFloat = 32
     static let floatingCenterWidth: CGFloat = 190
-    static let expandedWidth: CGFloat = 400
-    static let maxExpandedHeight: CGFloat = 420
+    static let expandedWidth: CGFloat = 640
+    static let maxExpandedHeight: CGFloat = 560
 
     let metrics: NotchScreenMetrics
 

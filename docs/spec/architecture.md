@@ -498,7 +498,7 @@ extension PresentationState {
 | 层切换 | 非激活层 opacity 0、blur 6、scale .96；opacity 0.25s、blur 0.3s、scale 0.35s（同上曲线）；激活层延迟 60ms |
 | 完成反馈 | 右耳加宽到 140，显示 ✓ 加标题，2s 后恢复；尺寸变化走同一条宽高曲线 |
 | pop（新 blocked 未自动展开） | scale 1.04，`spring(response: 0.3, dampingFraction: 0.5)` |
-| 收起后内容保留 | 0.36s 后才卸载（覆盖 0.25s 的退场） |
+| 层的挂载 | 收起层与展开层始终挂载，只切换激活状态（插入的层会以激活态出现，跳过淡入） |
 
 其余窗口要求：
 

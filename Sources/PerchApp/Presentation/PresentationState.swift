@@ -28,9 +28,13 @@ struct PresentationState {
     private enum Pending { case expand, collapse }
 
     private(set) var surface: Surface = .hidden
-    private(set) var nextTick: ContinuousClock.Instant?
+    /// Earliest of the pending surface timer and the completion feedback expiry.
+    var nextTick: ContinuousClock.Instant? { [pendingDeadline, completionDeadline].compactMap { $0 }.min() }
     static let completionDuration: Duration = .seconds(2)
-    var completion: String? { fatalError("unimplemented") }
+    /// "✓ title" shown in the collapsed ear after an agent finishes.
+    private(set) var completion: String?
+    private var completionDeadline: ContinuousClock.Instant?
+    private var pendingDeadline: ContinuousClock.Instant?
     /// Bumped when a new blocked agent did not auto-expand the notch: drives the pop animation.
     private(set) var pulse = 0
     private var pending: Pending?
@@ -69,9 +73,15 @@ struct PresentationState {
         case (.clicked, .expanded(pinned: true, _)), (.clickedOutside, .expanded), (.rowActivated, .expanded):
             set(.collapsed)
 
+        case let (.agentFinished(title), .collapsed):
+            completion = title
+            completionDeadline = now + Self.completionDuration
+
         case (.tick, _):
-            guard let deadline = nextTick, now >= deadline, let action = pending else { return }
-            set(action == .expand ? .expanded(pinned: false, auto: false) : .collapsed)
+            if let deadline = completionDeadline, now >= deadline { clearCompletion() }
+            if let deadline = pendingDeadline, now >= deadline, let action = pending {
+                set(action == .expand ? .expanded(pinned: false, auto: false) : .collapsed)
+            }
 
         default:
             break
@@ -87,19 +97,25 @@ struct PresentationState {
         schedule(.collapse, at: now + Self.autoCollapse)
     }
 
-    /// Any surface change cancels pending timers.
+    /// Any surface change cancels pending timers; leaving collapsed also ends completion feedback.
     private mutating func set(_ next: Surface) {
         surface = next
         cancel()
+        if next != .collapsed { clearCompletion() }
     }
 
     private mutating func schedule(_ action: Pending, at deadline: ContinuousClock.Instant) {
         pending = action
-        nextTick = deadline
+        pendingDeadline = deadline
     }
 
     private mutating func cancel() {
         pending = nil
-        nextTick = nil
+        pendingDeadline = nil
+    }
+
+    private mutating func clearCompletion() {
+        completion = nil
+        completionDeadline = nil
     }
 }

@@ -1,16 +1,14 @@
 import PerchCore
 import SwiftUI
 
-/// Fills the fixed canvas; the notch shape is anchored top-centre and grows
-/// in place. Choreography follows open-vibe-island: the collapsed band fades
-/// out where it is, the expanded content is laid out at its final size and
-/// revealed by the growing shape, and stays mounted briefly after collapsing
-/// so the shape clips it away instead of it vanishing.
+/// Fills the fixed canvas; the notch shape is anchored top-centre and grows in
+/// place. Visual parameters follow vibeisland.app's demo: one overshooting
+/// curve for size, a separate ease-out for the corner radius, a two-layer
+/// shadow with a state glow, and blur/scale crossfades between layers.
 struct NotchRootView: View {
     @Bindable var model: NotchModel
 
-    @State private var contentMounted = false
-    @State private var mountGeneration = 0
+    @State private var bottomRadius: CGFloat = 10
     @State private var popping = false
 
     var body: some View {
@@ -18,37 +16,38 @@ struct NotchRootView: View {
         let collapsed = model.geometry.collapsedSize(wingWidth: model.wingWidth)
         let open = model.geometry.expandedSize(contentHeight: model.contentHeight, wingWidth: model.wingWidth)
         let size = expanded ? open : collapsed
-        let shape = expanded ? NotchShape.expanded : NotchShape.collapsed
+        let shape = NotchShape(bottomRadius: bottomRadius)
+        let motion = !model.reduceMotion
 
         ZStack(alignment: .top) {
             shape
                 .fill(.black)
-                .overlay { shape.stroke(.white.opacity(expanded ? 0.07 : 0), lineWidth: 1) }
                 .frame(width: size.width, height: size.height)
+                .shadow(color: .black.opacity(0.6), radius: 4, y: 2)
+                .shadow(color: .black.opacity(0.3), radius: 12, y: 8)
+                .shadow(color: glow(expanded: expanded), radius: expanded ? 10 : 0)
 
-            if contentMounted {
-                ExpandedContent(model: model, width: open.width)
-                    .frame(width: size.width, height: size.height, alignment: .top)
-                    .clipShape(shape)
-                    .opacity(expanded ? 1 : 0)
-                    .blur(radius: expanded ? 0 : 6)   // vibeisland: incoming layer sharpens from 6px
-                    .transition(.opacity.animation(.easeOut(duration: 0.18).delay(0.12)))
-                    .allowsHitTesting(expanded)
-            }
+            // Always mounted, like vibeisland's stacked layers: an inserted layer would
+            // appear already active and skip its fade.
+            ExpandedContent(model: model, width: open.width)
+                .modifier(LayerFade(active: expanded, reduceMotion: model.reduceMotion))
+                .frame(width: size.width, height: size.height, alignment: .top)
+                .clipShape(shape)
+                .allowsHitTesting(expanded)
+                .accessibilityHidden(!expanded)
 
             CollapsedBand(summary: model.summary, style: model.preferences.compactStyle,
+                          completion: model.presentation.completion,
                           centerWidth: model.geometry.centerWidth, wingWidth: model.wingWidth,
                           height: model.geometry.bandHeight)
                 .frame(width: collapsed.width)
-                .opacity(expanded ? 0 : 1)
-                .blur(radius: expanded ? 6 : 0)
+                .modifier(LayerFade(active: !expanded, reduceMotion: model.reduceMotion))
                 .allowsHitTesting(false)
         }
+        .animation(motion ? Palette.size : nil, value: size)
         .contentShape(shape)
         .onTapGesture { if expanded { model.send(.clicked) } }   // collapsed clicks come from the monitor
-        .scaleEffect(scale(expanded: expanded), anchor: .top)
-        .animation(model.reduceMotion ? nil : (expanded ? Palette.open : Palette.close), value: expanded)
-        .animation(model.reduceMotion ? nil : Palette.resize, value: open.height)
+        .scaleEffect(popping && !expanded ? 1.04 : 1, anchor: .top)
         .animation(Palette.pop, value: popping)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(alignment: .top) {
@@ -61,28 +60,17 @@ struct NotchRootView: View {
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { model.contentHeight = $0 }
                 .hidden()
         }
-        .onChange(of: expanded, initial: true) { _, now in syncMount(expanded: now) }
+        .onChange(of: expanded, initial: true) { _, now in
+            withAnimation(motion ? Palette.radius : nil) { bottomRadius = now ? 14 : 10 }
+        }
         .onChange(of: model.presentation.pulse) { pop() }
         .environment(\.colorScheme, .dark)
     }
 
-    private func scale(expanded: Bool) -> CGFloat {
-        if expanded { return 1 }
-        if popping { return 1.04 }
-        return 1
-    }
-
-    private func syncMount(expanded: Bool) {
-        mountGeneration &+= 1
-        let generation = mountGeneration
-        if expanded {
-            contentMounted = true
-            return
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.36) {
-            guard mountGeneration == generation, !model.isExpanded else { return }
-            contentMounted = false
-        }
+    /// vibeisland adds a faint white rim glow to open lists and an amber one for attention.
+    private func glow(expanded: Bool) -> Color {
+        guard expanded else { return .clear }
+        return model.summary.counts[.blocked] != nil ? Palette.alert.opacity(0.15) : .white.opacity(0.04)
     }
 
     private func pop() {
@@ -123,7 +111,7 @@ private struct ExpandedHeader: View {
                     .foregroundStyle(.white.opacity(0.55))
                     .lineLimit(1)
             }
-            .padding(.leading, 30)
+            .padding(.leading, 18)
             .frame(width: lane, alignment: .leading)
 
             Color.clear.frame(width: model.geometry.centerWidth)
@@ -136,7 +124,7 @@ private struct ExpandedHeader: View {
             }
             .buttonStyle(HeaderButtonStyle())
             .help("Settings")
-            .padding(.trailing, 28)
+            .padding(.trailing, 16)
             .frame(width: lane, alignment: .trailing)
         }
         .frame(height: model.geometry.bandHeight)

@@ -1,43 +1,50 @@
-// Derived from open-vibe-island Sources/OpenIslandApp/NotchShape.swift
-// https://github.com/Octane0411/open-vibe-island — GPL-3.0
-// Modified by Herdr Perch.
 import SwiftUI
 
-/// One shape for both states: concave top "shoulders" drawn inside the rect,
-/// rounded bottom corners. Both radii animate, so collapsed → expanded reads
-/// as the notch itself growing.
+/// The notch silhouette from vibeisland.app's demo: rounded bottom corners
+/// plus fixed 6pt concave "shoulders" just outside the rect that blend into
+/// the menu bar. Only the bottom radius changes between states (10 → 14).
 struct NotchShape: Shape {
-    var topCornerRadius: CGFloat
-    var bottomCornerRadius: CGFloat
+    var bottomRadius: CGFloat
+    static let shoulder: CGFloat = 6
 
-    var animatableData: AnimatablePair<CGFloat, CGFloat> {
-        get { AnimatablePair(topCornerRadius, bottomCornerRadius) }
-        set {
-            topCornerRadius = newValue.first
-            bottomCornerRadius = newValue.second
-        }
+    var animatableData: CGFloat {
+        get { bottomRadius }
+        set { bottomRadius = newValue }
     }
 
-    static let collapsed = NotchShape(topCornerRadius: 6, bottomCornerRadius: 10)
-    static let expanded = NotchShape(topCornerRadius: 22, bottomCornerRadius: 22)
-
     func path(in rect: CGRect) -> Path {
-        let topR = min(topCornerRadius, rect.width / 4, rect.height / 4)
-        let botR = min(bottomCornerRadius, rect.width / 4, rect.height / 2)
+        let s = Self.shoulder
+        let r = min(bottomRadius, rect.width / 2, rect.height / 2)
         var path = Path()
-        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
-        path.addQuadCurve(to: CGPoint(x: rect.minX + topR, y: rect.minY + topR),
-                          control: CGPoint(x: rect.minX + topR, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.minX + topR, y: rect.maxY - botR))
-        path.addQuadCurve(to: CGPoint(x: rect.minX + topR + botR, y: rect.maxY),
-                          control: CGPoint(x: rect.minX + topR, y: rect.maxY))
-        path.addLine(to: CGPoint(x: rect.maxX - topR - botR, y: rect.maxY))
-        path.addQuadCurve(to: CGPoint(x: rect.maxX - topR, y: rect.maxY - botR),
-                          control: CGPoint(x: rect.maxX - topR, y: rect.maxY))
-        path.addLine(to: CGPoint(x: rect.maxX - topR, y: rect.minY + topR))
-        path.addQuadCurve(to: CGPoint(x: rect.maxX, y: rect.minY),
-                          control: CGPoint(x: rect.maxX - topR, y: rect.minY))
+        path.move(to: CGPoint(x: rect.minX - s, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX + s, y: rect.minY))
+        path.addQuadCurve(to: CGPoint(x: rect.maxX, y: rect.minY + s), control: CGPoint(x: rect.maxX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - r))
+        path.addQuadCurve(to: CGPoint(x: rect.maxX - r, y: rect.maxY), control: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX + r, y: rect.maxY))
+        path.addQuadCurve(to: CGPoint(x: rect.minX, y: rect.maxY - r), control: CGPoint(x: rect.minX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + s))
+        path.addQuadCurve(to: CGPoint(x: rect.minX - s, y: rect.minY), control: CGPoint(x: rect.minX, y: rect.minY))
         path.closeSubpath()
         return path
+    }
+}
+
+/// vibeisland's `.v6-layer` crossfade: inactive layers sit at opacity 0,
+/// blur 6, scale .96; each property has its own duration and the incoming
+/// layer starts 60ms late.
+struct LayerFade: ViewModifier {
+    var active: Bool
+    var reduceMotion: Bool
+
+    func body(content: Content) -> some View {
+        let delay = active ? 0.06 : 0
+        content
+            .opacity(active ? 1 : 0)
+            .animation(.easeInOut(duration: 0.25).delay(delay), value: active)
+            .blur(radius: active || reduceMotion ? 0 : 6)
+            .animation(.easeInOut(duration: 0.3).delay(delay), value: active)
+            .scaleEffect(active || reduceMotion ? 1 : 0.96, anchor: .top)
+            .animation(Palette.notchCurve(0.35).delay(delay), value: active)
     }
 }

@@ -31,13 +31,12 @@ enum Palette {
         }
     }
 
-    /// cubic-bezier(.175,.885,.32,1.1), 0.5s — wing width changes in the collapsed band
-    static let spring = Animation.timingCurve(0.175, 0.885, 0.32, 1.1, duration: 0.5)
-
-    // Notch motion, from open-vibe-island (architecture.md §6.1).
-    static let open = Animation.spring(response: 0.42, dampingFraction: 0.8)
-    static let close = Animation.smooth(duration: 0.3)
-    static let resize = Animation.smooth(duration: 0.3)
+    // Notch motion, from vibeisland.app's demo (architecture.md §6.1).
+    static func notchCurve(_ duration: Double) -> Animation {
+        .timingCurve(0.175, 0.885, 0.32, 1.1, duration: duration)
+    }
+    static let size = notchCurve(0.5)           // width/height, opening and closing alike
+    static let radius = Animation.easeOut(duration: 0.4)
     static let pop = Animation.spring(response: 0.3, dampingFraction: 0.5)
 }
 

@@ -108,7 +108,9 @@ final class NotchWindowController {
         if let event = tracker.update(location: NSEvent.mouseLocation, region: shapeRegion) {
             model.send(event)
         }
-        panel.ignoresMouseEvents = !(model.isExpanded && tracker.isInside)
+        // Assign only on change: this runs for every mouse move.
+        let ignores = !(model.isExpanded && tracker.isInside)
+        if panel.ignoresMouseEvents != ignores { panel.ignoresMouseEvents = ignores }
     }
 
     private func pointerClicked() {

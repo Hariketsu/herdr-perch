@@ -59,16 +59,6 @@ struct NotchRootView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .animation(motion ? (expanded ? Palette.open : Palette.close) : nil, value: size)
         .animation(Palette.pop, value: popping)
-        .background(alignment: .top) {
-            // Measured off-screen so the first expanded frame already has its final height.
-            // Only the list: expandedSize adds the notch strip (header) itself.
-            AgentList(rows: model.store.rows, style: model.preferences.listStyle,
-                      notice: model.notice, onActivate: { _ in })
-                .frame(width: open.width)
-                .fixedSize(horizontal: false, vertical: true)
-                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { model.contentHeight = $0 }
-                .hidden()
-        }
         .onChange(of: expanded, initial: true) { _, now in
             withAnimation(motion ? Palette.radius : nil) { bottomRadius = now ? 14 : 10 }
         }
@@ -127,8 +117,13 @@ private struct ExpandedContent: View {
             }
             .padding(.trailing, 14)
             .frame(height: model.geometry.bandHeight)
+            // Measured in place: the list is always mounted, and rows are single-line so
+            // its height does not depend on the width of the moment. (A hidden duplicate
+            // used for measuring doubled the view graph that hover hit-testing walks.)
             AgentList(rows: model.store.rows, style: model.preferences.listStyle,
                       notice: model.notice, onActivate: model.activate)
+                .fixedSize(horizontal: false, vertical: true)
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { model.contentHeight = $0 }
         }
     }
 }

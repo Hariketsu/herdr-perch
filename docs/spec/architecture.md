@@ -437,7 +437,8 @@ struct Preferences: Equatable {
     var autoExpandOnBlocked = true
     var displayPlacement: DisplayPlacement = .builtInNotch
     var launchAtLogin = false
-    // 键名：compactStyle, listStyle, autoExpandOnBlocked, displayPlacement, launchAtLogin
+    var followReduceMotion = false   // 默认始终播放完整动画；开启后才跟随系统的"减少动态效果"（2026-10-20 确认）
+    // 键名：compactStyle, listStyle, autoExpandOnBlocked, displayPlacement, launchAtLogin, followReduceMotion
     // 缺失或无法识别的值取默认值
     static func load(from defaults: UserDefaults) -> Preferences
     func save(to defaults: UserDefaults)

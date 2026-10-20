@@ -17,6 +17,7 @@ struct Preferences: Equatable {
     var autoExpandOnBlocked = true
     var displayPlacement: DisplayPlacement = .builtInNotch
     var launchAtLogin = false
+    var followReduceMotion = false
 
     static func load(from defaults: UserDefaults) -> Preferences {
         var preferences = Preferences()

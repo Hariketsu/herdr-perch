@@ -129,18 +129,21 @@ import Testing
         #expect(state.surface == .expanded(pinned: false, auto: false))
     }
 
-    @Test func clickTakesOverAutomaticExpansion() {
+    @Test(arguments: [false, true])
+    func clickPinsUnpinnedExpansion(_ automatic: Bool) {
         let t0 = ContinuousClock.now
         var state = collapsed(at: t0)
-        state.handle(.rowsChanged(hasRows: true, newBlocked: true), now: t0)
+        if automatic {
+            state.handle(.rowsChanged(hasRows: true, newBlocked: true), now: t0)
+        } else {
+            state.handle(.pointerEntered, now: t0)
+            state.handle(.tick, now: t0 + .milliseconds(120))
+        }
         state.handle(.clicked, now: t0 + .seconds(1))
-        // The contract requires expanded with auto cleared, but does not specify pinning here.
-        if case let .expanded(_, automatic) = state.surface { #expect(!automatic) }
-        else { Issue.record("Clicking an automatic expansion must keep it expanded") }
+        #expect(state.surface == .expanded(pinned: true, auto: false))
         #expect(state.nextTick == nil)
-        let manual = state.surface
         state.handle(.tick, now: t0 + .seconds(8))
-        #expect(state.surface == manual)
+        #expect(state.surface == .expanded(pinned: true, auto: false))
     }
 
     @Test func rowActivationCollapses() {

@@ -19,7 +19,7 @@ import PerchCore
         #expect(summary.overflow == 0)
         #expect(summary.counts.isEmpty)
         #expect(summary.total == 0)
-        // Whether allStale is true or false for empty input is not defined by the contract.
+        #expect(summary.allStale == false)
     }
 
     @Test func mostUrgentStatusWins() {

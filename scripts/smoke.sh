@@ -119,29 +119,42 @@ esac
 
 python3 -I - "$app_pid" "$duration" <<'PY'
 import math
-import statistics
 import subprocess
 import sys
 import time
 
 pid, duration = int(sys.argv[1]), float(sys.argv[2])
-deadline = time.monotonic() + duration
-samples = []
-while time.monotonic() < deadline:
-    result = subprocess.run(["ps", "-p", str(pid), "-o", "%cpu=,rss="], capture_output=True, text=True, timeout=1)
+def sample():
+    result = subprocess.run(["ps", "-p", str(pid), "-o", "cputime=,rss="], capture_output=True, text=True, timeout=1)
     values = result.stdout.split()
     if result.returncode != 0 or len(values) != 2:
         raise SystemExit("App exited during resource sampling")
-    cpu, rss = map(float, values)
+    # macOS cputime is accumulated user + system time, formatted as minutes:seconds.fraction.
+    cpu = 0.0
+    for part in values[0].split(":"):
+        cpu = cpu * 60 + float(part)
+    rss = float(values[1])
     if not all(math.isfinite(value) and value >= 0 for value in (cpu, rss)):
         raise SystemExit("Invalid ps CPU/RSS sample")
-    samples.append((cpu, rss))
+    return time.monotonic(), cpu, rss
+
+print("[smoke] warming up for 5s before resource sampling", flush=True)
+time.sleep(5)
+started, start_cpu, peak_rss = sample()
+deadline = started + duration
+sample_count = 1
+while True:
     time.sleep(min(1, max(0, deadline - time.monotonic())))
-if not samples:
-    raise SystemExit("No CPU/RSS samples collected")
-average_cpu = statistics.fmean(cpu for cpu, _ in samples)
-peak_rss = max(rss for _, rss in samples)
-print(f"[smoke] {len(samples)} sample(s) over {duration:g}s: average CPU {average_cpu:.3f}%, peak RSS {peak_rss / 1024:.2f} MiB")
+    ended, end_cpu, rss = sample()
+    sample_count += 1
+    peak_rss = max(peak_rss, rss)
+    if ended >= deadline:
+        break
+elapsed = ended - started
+if end_cpu < start_cpu:
+    raise SystemExit("Accumulated CPU time decreased during resource sampling")
+average_cpu = (end_cpu - start_cpu) / elapsed * 100
+print(f"[smoke] {sample_count} sample(s) over {elapsed:.2f}s: average CPU {average_cpu:.3f}%, peak RSS {peak_rss / 1024:.2f} MiB")
 if average_cpu >= 0.5 or peak_rss >= 60 * 1024:
     raise SystemExit("Resource budget exceeded: average CPU must be < 0.5%, RSS < 60 MiB")
 PY

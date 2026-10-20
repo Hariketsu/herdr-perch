@@ -21,7 +21,8 @@ struct NotchRootView: View {
                         .frame(maxWidth: .infinity)
                     if expanded {
                         AgentList(rows: model.store.rows, style: model.preferences.listStyle,
-                                  notice: model.notice, onActivate: model.activate)
+                                  notice: model.notice, onActivate: model.activate,
+                                  onSettings: model.openSettings)
                             .fixedSize(horizontal: false, vertical: true)
                             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { model.contentHeight = $0 }
                             .transition(.asymmetric(

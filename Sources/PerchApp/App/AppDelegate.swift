@@ -20,6 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             geometry: NotchGeometry(metrics: NotchScreenMetrics(screen: NSScreen.screens.first ?? NSScreen.main!)))
         window = NotchWindowController(model: model)
         settings = SettingsWindowController(model: model)
+        model.showSettings = { [weak self] in self?.settings.show() }
         menuBar = MenuBarController(store: store, onToggle: { [weak self] visible in
             visible ? self?.window.show() : self?.window.tearDown()
         }, onSettings: { [weak self] in self?.settings.show() })

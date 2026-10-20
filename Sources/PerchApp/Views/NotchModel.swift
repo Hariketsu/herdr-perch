@@ -13,6 +13,7 @@ final class NotchModel {
     var contentHeight: CGFloat = 0
     var notice: String?
     var reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+    @ObservationIgnored var showSettings: () -> Void = {}
     private(set) var presentation: PresentationState
 
     @ObservationIgnored private var tickTask: Task<Void, Never>?
@@ -54,6 +55,11 @@ final class NotchModel {
             notice = staleNotice
         }
         scheduleTick()
+    }
+
+    func openSettings() {
+        send(.rowActivated)  // collapse, like leaving via a row
+        showSettings()
     }
 
     func activate(_ row: AgentRow) {

@@ -30,19 +30,15 @@ struct NotchShape: Shape {
     }
 }
 
-/// Crossfade between the collapsed and expanded layers. Both start at once
-/// with the shape (a delay left the growing shape empty, or the notch blank
-/// mid-collapse), and neither scales: scaling content while the shape also
-/// clips it read as a jitter.
+/// The list layer's fade, as in the Vibe Island app: opacity only, starting with
+/// the shape on the first frame (~125ms in). No blur or scale — scaling content
+/// while the shape also clips it read as a jitter.
 struct LayerFade: ViewModifier {
     var active: Bool
-    var reduceMotion: Bool
 
     func body(content: Content) -> some View {
         content
             .opacity(active ? 1 : 0)
-            .animation(.easeOut(duration: active ? 0.2 : 0.15), value: active)
-            .blur(radius: active || reduceMotion ? 0 : 3)
-            .animation(.easeOut(duration: 0.25), value: active)
+            .animation(.easeOut(duration: active ? 0.15 : 0.1), value: active)
     }
 }

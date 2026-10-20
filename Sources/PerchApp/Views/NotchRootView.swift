@@ -30,7 +30,7 @@ struct NotchRootView: View {
             // Always mounted, like vibeisland's stacked layers: an inserted layer would
             // appear already active and skip its fade.
             ExpandedContent(model: model, width: open.width)
-                .modifier(LayerFade(active: expanded, reduceMotion: model.reduceMotion))
+                .modifier(LayerFade(active: expanded))
                 .frame(width: size.width, height: size.height, alignment: .top)
                 .clipShape(shape)
                 .allowsHitTesting(expanded)

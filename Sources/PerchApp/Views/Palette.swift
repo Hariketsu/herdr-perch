@@ -31,12 +31,13 @@ enum Palette {
         }
     }
 
-    // Notch motion, from vibeisland.app's demo (architecture.md §6.1).
-    static let open = Animation.timingCurve(0.175, 0.885, 0.32, 1.1, duration: 0.5)  // growing: vibeisland's overshoot
-    /// Shrinking with the same overshoot would dip below the menu-bar height and bounce back
-    /// (measured 4.5pt on video), so closing uses the same shape of curve without overshoot.
-    static let close = Animation.timingCurve(0.175, 0.885, 0.32, 1.0, duration: 0.45)
-    static let radius = Animation.easeOut(duration: 0.4)
+    // Notch motion, fitted to frame-by-frame measurements of the Vibe Island app
+    // (ref/vibe-island recordings, 2026-10-20): a near-critically-damped spring that
+    // reaches ~90% in 0.2s and settles by ~0.35s, overshooting under 1%, both ways.
+    // (The website demo's overshooting bezier does not match the app.)
+    static let open = Animation.spring(response: 0.36, dampingFraction: 0.9)
+    static let close = Animation.spring(response: 0.36, dampingFraction: 0.95)
+    static let radius = Animation.easeOut(duration: 0.3)
     static let pop = Animation.spring(response: 0.3, dampingFraction: 0.5)
 }
 

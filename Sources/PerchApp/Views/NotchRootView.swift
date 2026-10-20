@@ -28,10 +28,12 @@ struct NotchRootView: View {
                 .shadow(color: glow(expanded: expanded), radius: expanded ? 10 : 0)
 
             // Always mounted, like vibeisland's stacked layers: an inserted layer would
-            // appear already active and skip its fade.
-            ExpandedContent(model: model, width: open.width)
+            // appear already active and skip its fade. Laid out at the shape's current
+            // width, as in Vibe Island: leading content rides the left edge, trailing
+            // tags the right edge, and cards stretch with the shape.
+            ExpandedContent(model: model)
                 .modifier(LayerFade(active: expanded))
-                .frame(width: size.width, height: size.height, alignment: .top)
+                .modifier(ReflowingFrame(width: size.width, height: size.height))
                 .clipShape(shape)
                 .allowsHitTesting(expanded)
                 .accessibilityHidden(!expanded)
@@ -86,10 +88,27 @@ struct NotchRootView: View {
     }
 }
 
+/// A frame whose size is animatable data, so its content is laid out again at
+/// every animation frame. A plain `.frame` only interpolates each child between
+/// its start and end positions: long titles laid out wide overlapped tags that
+/// were still sliding in. Reflowing truncates titles to the width of the moment.
+private struct ReflowingFrame: ViewModifier, Animatable {
+    var width: CGFloat
+    var height: CGFloat
+
+    nonisolated var animatableData: AnimatablePair<CGFloat, CGFloat> {
+        get { AnimatablePair(width, height) }
+        set { (width, height) = (newValue.first, newValue.second) }
+    }
+
+    func body(content: Content) -> some View {
+        content.frame(width: width, height: height, alignment: .top)
+    }
+}
+
 /// Notch strip with settings on the right of the camera (as in Vibe Island), then the list.
 private struct ExpandedContent: View {
     @Bindable var model: NotchModel
-    var width: CGFloat
 
     var body: some View {
         VStack(spacing: 0) {
@@ -111,7 +130,6 @@ private struct ExpandedContent: View {
             AgentList(rows: model.store.rows, style: model.preferences.listStyle,
                       notice: model.notice, onActivate: model.activate)
         }
-        .frame(width: width)
     }
 }
 

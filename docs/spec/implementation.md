@@ -159,7 +159,7 @@ E2E 约束：
   - 无行时进入 hidden。
 - `CompactSummary`：
   - 最紧急状态；
-  - 8 个以上时的 overflow；
+  - 6 个以上时的 overflow；
   - counts 只含非零项；
   - 全部 stale 时 `allStale`。
 - `NotchGeometry`（契约见 architecture.md 第 6 节；刘海检测部分可参考 NotchAgent 的 `NotchGeometryTests`）：有刘海与无刘海屏、刘海宽度越界时回退、展开尺寸的上下限与取偶、居中贴顶。

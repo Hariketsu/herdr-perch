@@ -379,7 +379,7 @@ enum PresentationEvent {
 | 有行，初始 | `collapsed` |
 | collapsed 时指针进入并停留 ≥120ms | `expanded(pinned:false, auto:false)` |
 | 未钉住的 expanded 时指针离开 ≥280ms | `collapsed` |
-| 点击刘海 | collapsed ↔ `expanded(pinned:true)` 切换 |
+| 点击刘海 | collapsed → `expanded(pinned:true)`；未钉住的 expanded（含 auto）→ `expanded(pinned:true)`；钉住的 expanded → `collapsed` |
 | 点击外部 | `collapsed` |
 | collapsed 时出现新 blocked 且设置开启 | `expanded(pinned:false, auto:true)` |
 | auto 展开后 8s 内没有指针进入或点击 | `collapsed` |
@@ -394,7 +394,7 @@ struct CompactSummary: Equatable {
     var overflow: Int                     // B：超出 6 个的数量（显示 +N）
     var counts: [DisplayStatus: Int]      // C：只含数量 > 0 的状态
     var total: Int                        // A
-    var allStale: Bool
+    var allStale: Bool                    // 有行且全部 stale；无行时为 false
     static let maxDots = 6
     static func make(_ rows: [AgentRow]) -> CompactSummary
     /// 每只耳朵的宽度（与原型 notch.jsx wingWidth 一致）：

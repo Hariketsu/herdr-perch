@@ -190,3 +190,123 @@ import Testing
         }
     }
 }
+
+// Motion signals remain deterministic reducer outputs; no animation or wall-clock waits.
+extension PresentationStateTests {
+    @Test func isHoveringIncludesTheEntireCollapsedHoverIntent() {
+        let t0 = ContinuousClock.now
+        var state = collapsed(at: t0)
+        #expect(!state.isHovering)
+        state.handle(.pointerEntered, now: t0)
+        #expect(state.surface == .collapsed)
+        #expect(state.isHovering)
+        state.handle(.tick, now: t0 + .milliseconds(119))
+        #expect(state.surface == .collapsed)
+        #expect(state.isHovering)
+        state.handle(.tick, now: t0 + .milliseconds(120))
+        #expect(state.surface == .expanded(pinned: false, auto: false))
+        #expect(!state.isHovering)
+    }
+
+    @Test func pointerExitClearsIsHoveringBeforeIntentCompletes() {
+        let t0 = ContinuousClock.now
+        var state = collapsed(at: t0)
+        state.handle(.pointerEntered, now: t0)
+        #expect(state.isHovering)
+        state.handle(.pointerExited, now: t0 + .milliseconds(50))
+        #expect(!state.isHovering)
+        state.handle(.tick, now: t0 + .milliseconds(120))
+        #expect(state.surface == .collapsed)
+        #expect(!state.isHovering)
+    }
+
+    @Test func hiddenStateClearsIsHovering() {
+        let t0 = ContinuousClock.now
+        var state = PresentationState()
+        #expect(!state.isHovering)
+        state.handle(.rowsChanged(hasRows: true, newBlocked: false), now: t0)
+        state.handle(.pointerEntered, now: t0)
+        #expect(state.isHovering)
+        state.handle(.rowsChanged(hasRows: false, newBlocked: false), now: t0 + .milliseconds(50))
+        #expect(state.surface == .hidden)
+        #expect(!state.isHovering)
+        state.handle(.tick, now: t0 + .seconds(1))
+        #expect(!state.isHovering)
+    }
+
+    @Test(arguments: ["pinned", "hover", "auto"])
+    func pointerEntryWhileExpandedDoesNotSetIsHovering(_ mode: String) {
+        let t0 = ContinuousClock.now
+        var state = collapsed(at: t0)
+        switch mode {
+        case "pinned": state.handle(.clicked, now: t0)
+        case "hover":
+            state.handle(.pointerEntered, now: t0)
+            state.handle(.tick, now: t0 + .milliseconds(120))
+        default: state.handle(.rowsChanged(hasRows: true, newBlocked: true), now: t0)
+        }
+        state.handle(.pointerEntered, now: t0 + .seconds(1))
+        #expect(!state.isHovering)
+    }
+
+    @Test func blockedPulseAccumulatesWhenAutomaticExpansionIsDisabled() {
+        let t0 = ContinuousClock.now
+        var state = PresentationState(autoExpandOnBlocked: false)
+        state.handle(.rowsChanged(hasRows: true, newBlocked: false), now: t0)
+        let initial = state.pulse
+        for increment in 1...3 {
+            state.handle(.rowsChanged(hasRows: true, newBlocked: true), now: t0 + .seconds(increment))
+            #expect(state.surface == .collapsed)
+            #expect(state.pulse == initial + increment)
+        }
+    }
+
+    @Test(arguments: ["pinned", "hover", "auto"])
+    func newBlockedPulsesWhenAlreadyExpanded(_ mode: String) {
+        let t0 = ContinuousClock.now
+        var state = collapsed(at: t0)
+        switch mode {
+        case "pinned": state.handle(.clicked, now: t0)
+        case "hover":
+            state.handle(.pointerEntered, now: t0)
+            state.handle(.tick, now: t0 + .milliseconds(120))
+        default: state.handle(.rowsChanged(hasRows: true, newBlocked: true), now: t0)
+        }
+        let initial = state.pulse
+        let surface = state.surface
+        for increment in 1...3 {
+            state.handle(.rowsChanged(hasRows: true, newBlocked: true), now: t0 + .seconds(increment))
+            #expect(state.pulse == initial + increment)
+            #expect(state.surface == surface)
+        }
+    }
+
+    @Test func blockedThatAutomaticallyExpandsDoesNotPulse() {
+        let t0 = ContinuousClock.now
+        var state = collapsed(at: t0)
+        let initial = state.pulse
+        state.handle(.rowsChanged(hasRows: true, newBlocked: true), now: t0)
+        #expect(state.surface == .expanded(pinned: false, auto: true))
+        #expect(state.pulse == initial)
+    }
+
+    @Test func hiddenWithoutRowsNeverPulsesEvenForNewBlocked() {
+        let t0 = ContinuousClock.now
+        var state = PresentationState(autoExpandOnBlocked: false)
+        let initial = state.pulse
+        state.handle(.rowsChanged(hasRows: false, newBlocked: true), now: t0)
+        #expect(state.surface == .hidden)
+        #expect(state.pulse == initial)
+    }
+
+    @Test func updatesWithoutNewBlockedDoNotPulse() {
+        let t0 = ContinuousClock.now
+        var state = PresentationState(autoExpandOnBlocked: false)
+        let initial = state.pulse
+        state.handle(.rowsChanged(hasRows: true, newBlocked: false), now: t0)
+        #expect(state.pulse == initial)
+        state.handle(.clicked, now: t0)
+        state.handle(.rowsChanged(hasRows: true, newBlocked: false), now: t0 + .seconds(1))
+        #expect(state.pulse == initial)
+    }
+}

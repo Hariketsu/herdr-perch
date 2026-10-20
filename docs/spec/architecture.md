@@ -475,7 +475,7 @@ extension PresentationState {
     var isHovering: Bool { get }
     /// rowsChanged(hasRows: true, newBlocked: true) 没有引起自动展开时（自动展开设置关闭，或者已经处于展开态）加 1。
     /// 视图监听它的变化，播放一次 pop 动画（放大到 1.04，spring(response: 0.3, dampingFraction: 0.5)）。
-    /// 隐藏态下不加。
+    /// 隐藏态下（hasRows 为 false）不加；从隐藏态首次出现行且带新 blocked、又没有自动展开时，先变为 collapsed 再加 1。
     var pulse: Int { get }
 }
 ```

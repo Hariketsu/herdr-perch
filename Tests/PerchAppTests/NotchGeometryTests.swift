@@ -95,3 +95,71 @@ import Testing
         #expect(primary.panelFrame(size: CGSize(width: 266, height: 32)) == CGRect(x: 623, y: 950, width: 266, height: 32))
     }
 }
+
+// Fixed-window canvas contract: architecture.md §6.1.
+extension NotchGeometryTests {
+    @Test func canvasOnNotchedAndUnnotchedScreensIncludesMargins() {
+        #expect(NotchGeometry.maxWingWidth == 112)
+        #expect(NotchGeometry.canvasMargin == 24)
+        let notched = NotchGeometry(metrics: notchedMetrics())
+        // The widest ears produce a 410pt shape, larger than the 400pt expanded preference.
+        #expect(notched.canvasSize == CGSize(width: 458, height: 444))
+        #expect(notched.canvasFrame == CGRect(x: 527, y: 538, width: 458, height: 444))
+        let floating = NotchGeometry(metrics: NotchScreenMetrics(frame: screenFrame, safeAreaTop: 0))
+        #expect(floating.canvasSize == CGSize(width: 462, height: 444))
+        #expect(floating.canvasFrame == CGRect(x: 525, y: 538, width: 462, height: 444))
+    }
+
+    @Test func canvasCanBeDeterminedByExpandedWidthRatherThanEars() {
+        let geometry = NotchGeometry(metrics: notchedMetrics(gap: 100))
+        // A 100pt center and two 112pt ears fit within the preferred 400pt expanded width.
+        #expect(geometry.canvasSize == CGSize(width: 448, height: 444))
+    }
+
+    @Test func narrowScreenClampsExpandedPreferenceBeforeAddingMargins() {
+        var metrics = notchedMetrics(gap: 100)
+        metrics.frame = CGRect(x: 0, y: 0, width: 350, height: 500)
+        metrics.auxiliaryTopLeftArea = CGRect(x: 0, y: 468, width: 125, height: 32)
+        metrics.auxiliaryTopRightArea = CGRect(x: 225, y: 468, width: 125, height: 32)
+        let geometry = NotchGeometry(metrics: metrics)
+        // The capped preference is 326pt, larger than the 324pt maximum ear span.
+        #expect(geometry.canvasSize == CGSize(width: 374, height: 384))
+        #expect(geometry.canvasFrame == CGRect(x: -12, y: 116, width: 374, height: 384))
+    }
+
+    @Test func maximumEarSpanCanExceedNarrowScreenPreference() {
+        let geometry = NotchGeometry(metrics: NotchScreenMetrics(frame: CGRect(x: 0, y: 0, width: 350, height: 500), safeAreaTop: 0))
+        // The contract caps the expanded preference, not the final canvas or maximum ear span.
+        #expect(geometry.canvasSize == CGSize(width: 462, height: 384))
+    }
+
+    @Test func canvasStaysTopCenteredOnScreensWithNonzeroOrigins() {
+        let geometry = NotchGeometry(metrics: NotchScreenMetrics(frame: CGRect(x: -1600, y: 120, width: 1512, height: 982), safeAreaTop: 0))
+        #expect(geometry.canvasFrame == CGRect(x: -1075, y: 658, width: 462, height: 444))
+    }
+
+    @Test func canvasContainsCollapsedAndExpandedPanelFramesAcrossSupportedSizes() {
+        var narrow = notchedMetrics(gap: 100)
+        narrow.frame = CGRect(x: -350, y: 100, width: 350, height: 500)
+        narrow.auxiliaryTopLeftArea = CGRect(x: -350, y: 568, width: 125, height: 32)
+        narrow.auxiliaryTopRightArea = CGRect(x: -125, y: 568, width: 125, height: 32)
+        let screens = [notchedMetrics(), notchedMetrics(gap: 399), narrow,
+                       NotchScreenMetrics(frame: screenFrame, safeAreaTop: 0),
+                       NotchScreenMetrics(frame: CGRect(x: 1512, y: -100, width: 350, height: 501), safeAreaTop: 0)]
+        for metrics in screens {
+            let geometry = NotchGeometry(metrics: metrics)
+            let canvas = geometry.canvasFrame
+            #expect(canvas.size == geometry.canvasSize)
+            #expect(canvas.midX == metrics.frame.midX)
+            #expect(canvas.maxY == metrics.frame.maxY)
+            for wing: CGFloat in [40, 42, 64, 72, 82, 88, 112] {
+                let collapsed = geometry.panelFrame(size: geometry.collapsedSize(wingWidth: wing))
+                #expect(canvas.contains(collapsed), "Canvas must contain collapsed frame at wing \(wing)")
+                for content: CGFloat in [0, 1, 70.8, 71, 100, 200, 388, 500, 1000] {
+                    let expanded = geometry.panelFrame(size: geometry.expandedSize(contentHeight: content, wingWidth: wing))
+                    #expect(canvas.contains(expanded), "Canvas must contain expanded frame at wing \(wing), content \(content)")
+                }
+            }
+        }
+    }
+}

@@ -34,10 +34,33 @@ struct NotchGeometry: Equatable {
         self.metrics = metrics
     }
 
-    var hasNotch: Bool { fatalError("unimplemented") }
-    var centerWidth: CGFloat { fatalError("unimplemented") }
-    var bandHeight: CGFloat { fatalError("unimplemented") }
-    func collapsedSize(wingWidth: CGFloat) -> CGSize { fatalError("unimplemented") }
-    func expandedSize(contentHeight: CGFloat, wingWidth: CGFloat) -> CGSize { fatalError("unimplemented") }
-    func panelFrame(size: CGSize) -> CGRect { fatalError("unimplemented") }
+    /// Physical notch width when the screen has one we trust (NotchAgent's 80…400pt bound).
+    private var notchWidth: CGFloat? {
+        guard metrics.safeAreaTop > 0,
+              let left = metrics.auxiliaryTopLeftArea,
+              let right = metrics.auxiliaryTopRightArea
+        else { return nil }
+        let gap = right.minX - left.maxX
+        return gap > 80 && gap < 400 ? gap : nil
+    }
+
+    var hasNotch: Bool { notchWidth != nil }
+    var centerWidth: CGFloat { notchWidth ?? Self.floatingCenterWidth }
+    var bandHeight: CGFloat { hasNotch ? metrics.safeAreaTop : Self.fallbackBandHeight }
+
+    func collapsedSize(wingWidth: CGFloat) -> CGSize {
+        CGSize(width: centerWidth + 2 * wingWidth, height: bandHeight)
+    }
+
+    func expandedSize(contentHeight: CGFloat, wingWidth: CGFloat) -> CGSize {
+        let collapsed = collapsedSize(wingWidth: wingWidth)
+        let width = max(collapsed.width, min(Self.expandedWidth, metrics.frame.width - 24))
+        let height = min(bandHeight + contentHeight, Self.maxExpandedHeight, metrics.frame.height * 0.72)
+        return CGSize(width: width, height: (height / 2).rounded() * 2)
+    }
+
+    func panelFrame(size: CGSize) -> CGRect {
+        CGRect(x: metrics.frame.midX - size.width / 2, y: metrics.frame.maxY - size.height,
+               width: size.width, height: size.height)
+    }
 }

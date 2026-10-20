@@ -1,0 +1,9 @@
+Herdr Perch
+Copyright (C) 2026 Herdr Perch contributors
+Licensed under the GNU General Public License, version 3 (see LICENSE).
+
+Portions of this software are derived from NotchAgent
+(https://github.com/ykushch/notchagent), Copyright Yuri Kushch,
+licensed under the Apache License, Version 2.0
+(see LICENSES/NotchAgent-Apache-2.0.txt).
+Files derived from NotchAgent carry a header naming the original file.

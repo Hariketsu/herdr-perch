@@ -1,0 +1,7 @@
+/ref/
+.build/
+.swiftpm/
+/dist/
+.DS_Store
+Tests/E2E/.venv/
+__pycache__/

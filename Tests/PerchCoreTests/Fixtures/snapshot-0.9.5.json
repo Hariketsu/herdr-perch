@@ -1,0 +1,222 @@
+{
+  "id": "1",
+  "result": {
+    "type": "session_snapshot",
+    "snapshot": {
+      "version": "0.9.5",
+      "protocol": 22,
+      "focused_workspace_id": "w1",
+      "focused_tab_id": "w1:t1",
+      "focused_pane_id": "w1:p1",
+      "workspaces": [
+        {
+          "workspace_id": "w1",
+          "number": 1,
+          "label": "tmp",
+          "focused": true,
+          "pane_count": 3,
+          "tab_count": 2,
+          "active_tab_id": "w1:t1",
+          "agent_status": "blocked"
+        }
+      ],
+      "tabs": [
+        {
+          "tab_id": "w1:t1",
+          "workspace_id": "w1",
+          "number": 1,
+          "label": "1",
+          "focused": true,
+          "pane_count": 2,
+          "agent_status": "blocked"
+        },
+        {
+          "tab_id": "w1:t2",
+          "workspace_id": "w1",
+          "number": 2,
+          "label": "2",
+          "focused": false,
+          "pane_count": 1,
+          "agent_status": "done"
+        }
+      ],
+      "panes": [
+        {
+          "pane_id": "w1:p1",
+          "terminal_id": "term_65e3cd3f3be201",
+          "workspace_id": "w1",
+          "tab_id": "w1:t1",
+          "focused": true,
+          "cwd": "/private/tmp",
+          "foreground_cwd": "/private/tmp",
+          "agent": "claude",
+          "agent_status": "working",
+          "scroll": {
+            "offset_from_bottom": 0,
+            "max_offset_from_bottom": 0,
+            "viewport_rows": 40
+          },
+          "revision": 0
+        },
+        {
+          "pane_id": "w1:p3",
+          "terminal_id": "term_65e3cd3f3e0cc3",
+          "workspace_id": "w1",
+          "tab_id": "w1:t1",
+          "focused": false,
+          "cwd": "/private/tmp",
+          "foreground_cwd": "/private/tmp",
+          "agent": "omp",
+          "title": "Fixture task title",
+          "agent_status": "blocked",
+          "state_labels": {
+            "blocked": "needs approval"
+          },
+          "scroll": {
+            "offset_from_bottom": 0,
+            "max_offset_from_bottom": 0,
+            "viewport_rows": 38
+          },
+          "revision": 0
+        },
+        {
+          "pane_id": "w1:p2",
+          "terminal_id": "term_65e3cd3f3d4ef2",
+          "workspace_id": "w1",
+          "tab_id": "w1:t2",
+          "focused": false,
+          "cwd": "/private/tmp",
+          "foreground_cwd": "/private/tmp",
+          "agent": "codex",
+          "agent_status": "done",
+          "scroll": {
+            "offset_from_bottom": 0,
+            "max_offset_from_bottom": 0,
+            "viewport_rows": 40
+          },
+          "revision": 0
+        }
+      ],
+      "layouts": [
+        {
+          "workspace_id": "w1",
+          "tab_id": "w1:t1",
+          "zoomed": false,
+          "area": {
+            "x": 0,
+            "y": 0,
+            "width": 120,
+            "height": 40
+          },
+          "focused_pane_id": "w1:p1",
+          "panes": [
+            {
+              "pane_id": "w1:p1",
+              "focused": true,
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 60,
+                "height": 40
+              }
+            },
+            {
+              "pane_id": "w1:p3",
+              "focused": false,
+              "rect": {
+                "x": 60,
+                "y": 0,
+                "width": 60,
+                "height": 40
+              }
+            }
+          ],
+          "splits": [
+            {
+              "id": "split_0_root",
+              "direction": "right",
+              "ratio": 0.5,
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 120,
+                "height": 40
+              }
+            }
+          ]
+        },
+        {
+          "workspace_id": "w1",
+          "tab_id": "w1:t2",
+          "zoomed": false,
+          "area": {
+            "x": 0,
+            "y": 0,
+            "width": 120,
+            "height": 40
+          },
+          "focused_pane_id": "w1:p2",
+          "panes": [
+            {
+              "pane_id": "w1:p2",
+              "focused": true,
+              "rect": {
+                "x": 0,
+                "y": 0,
+                "width": 120,
+                "height": 40
+              }
+            }
+          ],
+          "splits": []
+        }
+      ],
+      "agents": [
+        {
+          "terminal_id": "term_65e3cd3f3be201",
+          "agent": "claude",
+          "agent_status": "working",
+          "workspace_id": "w1",
+          "tab_id": "w1:t1",
+          "pane_id": "w1:p1",
+          "focused": true,
+          "state_change_seq": 1,
+          "cwd": "/private/tmp",
+          "foreground_cwd": "/private/tmp",
+          "revision": 0
+        },
+        {
+          "terminal_id": "term_65e3cd3f3e0cc3",
+          "agent": "omp",
+          "title": "Fixture task title",
+          "agent_status": "blocked",
+          "state_labels": {
+            "blocked": "needs approval"
+          },
+          "workspace_id": "w1",
+          "tab_id": "w1:t1",
+          "pane_id": "w1:p3",
+          "focused": false,
+          "state_change_seq": 4,
+          "cwd": "/private/tmp",
+          "foreground_cwd": "/private/tmp",
+          "revision": 0
+        },
+        {
+          "terminal_id": "term_65e3cd3f3d4ef2",
+          "agent": "codex",
+          "agent_status": "done",
+          "workspace_id": "w1",
+          "tab_id": "w1:t2",
+          "pane_id": "w1:p2",
+          "focused": false,
+          "state_change_seq": 3,
+          "completion_seq": 3,
+          "cwd": "/private/tmp",
+          "foreground_cwd": "/private/tmp",
+          "revision": 0
+        }
+      ]
+    }
+  }
+}

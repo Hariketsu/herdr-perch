@@ -64,8 +64,47 @@ public struct Snapshot: Sendable, Equatable {
         self.agents = agents
     }
 
+    /// Decodes a full `session.snapshot` response line. Elements missing a
+    /// required identifier are skipped individually rather than failing the whole snapshot.
     public static func decode(response: Data) throws -> Snapshot {
-        fatalError("unimplemented")
+        let result = try HerdrClient.result(of: response)
+        let body = result["snapshot"] as? [String: Any] ?? result
+        let panes = (body["panes"] as? [[String: Any]] ?? []).compactMap(PaneInfo.init(json:))
+        let agents = (body["agents"] as? [[String: Any]] ?? []).compactMap(AgentInfo.init(json:))
+        return Snapshot(
+            protocolVersion: (body["protocol"] as? NSNumber)?.intValue ?? 0,
+            panes: panes,
+            agents: agents)
+    }
+}
+
+extension PaneInfo {
+    init?(json: [String: Any]) {
+        guard let paneID = json["pane_id"] as? String,
+              let tabID = json["tab_id"] as? String,
+              let workspaceID = json["workspace_id"] as? String
+        else { return nil }
+        self.init(paneID: paneID, tabID: tabID, workspaceID: workspaceID)
+    }
+}
+
+extension AgentInfo {
+    init?(json: [String: Any]) {
+        guard let pane = PaneInfo(json: json), let agent = json["agent"] as? String else { return nil }
+        self.init(
+            paneID: pane.paneID,
+            tabID: pane.tabID,
+            workspaceID: pane.workspaceID,
+            agent: agent,
+            displayAgent: json["display_agent"] as? String,
+            name: json["name"] as? String,
+            status: (json["agent_status"] as? String).flatMap(AgentStatus.init(rawValue:)) ?? .unknown,
+            stateChangeSeq: (json["state_change_seq"] as? NSNumber)?.uint64Value ?? 0,
+            completionSeq: (json["completion_seq"] as? NSNumber)?.uint64Value,
+            title: json["title"] as? String ?? json["terminal_title_stripped"] as? String,
+            stateLabels: (json["state_labels"] as? [String: Any])?.compactMapValues { $0 as? String } ?? [:],
+            cwd: json["foreground_cwd"] as? String ?? json["cwd"] as? String,
+            focused: json["focused"] as? Bool ?? false)
     }
 }
 

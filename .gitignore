@@ -5,3 +5,4 @@
 .DS_Store
 Tests/E2E/.venv/
 __pycache__/
+/.worktrees/

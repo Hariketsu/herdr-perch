@@ -1,0 +1,127 @@
+{
+  "fill-specializations": [
+    {
+      "value": {
+        "automatic-gradient": "extended-srgb:0.89412,0.89412,0.90588,1.00000"
+      }
+    },
+    {
+      "appearance": "dark",
+      "value": {
+        "automatic-gradient": "extended-srgb:0.15294,0.15294,0.16471,1.00000"
+      }
+    }
+  ],
+  "groups": [
+    {
+      "layers": [
+        {
+          "image-name": "ram-W.png",
+          "name": "ram-W",
+          "glass": false,
+          "hidden": false,
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "srgb:0.24706,0.24706,0.27451,1.00000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "srgb:0.63137,0.63137,0.66667,1.00000"
+              }
+            }
+          ]
+        },
+        {
+          "image-name": "ram-L.png",
+          "name": "ram-L",
+          "glass": false,
+          "hidden": false,
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "srgb:0.55686,0.55686,0.58824,1.00000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "srgb:0.89412,0.89412,0.90588,1.00000"
+              }
+            }
+          ]
+        },
+        {
+          "image-name": "ram-H.png",
+          "name": "ram-H",
+          "glass": false,
+          "hidden": false,
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "srgb:0.44314,0.44314,0.47843,1.00000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "srgb:0.76863,0.76863,0.79216,1.00000"
+              }
+            }
+          ]
+        },
+        {
+          "image-name": "ram-S.png",
+          "name": "ram-S",
+          "glass": false,
+          "hidden": false,
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "srgb:0.38824,0.38824,0.41961,1.00000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "srgb:0.69804,0.69804,0.72549,1.00000"
+              }
+            }
+          ]
+        },
+        {
+          "image-name": "ram-R.png",
+          "name": "ram-R",
+          "glass": false,
+          "hidden": false,
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "srgb:0.29020,0.29020,0.32157,1.00000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "srgb:0.55686,0.55686,0.58824,1.00000"
+              }
+            }
+          ]
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.5
+      },
+      "translucency": {
+        "enabled": false,
+        "value": 0.5
+      }
+    }
+  ],
+  "supported-platforms": {
+    "squares": "shared"
+  }
+}

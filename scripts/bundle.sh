@@ -12,7 +12,9 @@ BIN="$(swift build -c "$CONFIG" --show-bin-path)/PerchApp"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/PerchApp"
-cp LICENSE NOTICE "$APP/Contents/Resources/"
+# Icon from scripts/make-icon.py. Only the .icns for now: see that script for why the
+# macOS 26 Assets.car (Resources/AppIcon.icon) is not shipped yet.
+cp LICENSE NOTICE Resources/AppIcon.icns "$APP/Contents/Resources/"
 
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -22,6 +24,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>CFBundleIdentifier</key><string>dev.herdr.perch</string>
     <key>CFBundleName</key><string>Herdr Perch</string>
     <key>CFBundleExecutable</key><string>PerchApp</string>
+    <key>CFBundleIconFile</key><string>AppIcon</string>
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleShortVersionString</key><string>0.1.0</string>
     <key>CFBundleVersion</key><string>1</string>

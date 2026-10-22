@@ -124,6 +124,7 @@ private struct DisplayPage: View {
         }
         Section(title: "Panel") {
             Picker("Rows", selection: savedBinding(model, \.listStyle)) {
+                Text("Grouped").tag(ListStyle.grouped)
                 Text("Detailed").tag(ListStyle.heroAndRows)
                 Text("Compact").tag(ListStyle.rowsOnly)
             }

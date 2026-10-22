@@ -12,6 +12,8 @@ final class NotchModel {
     var geometry: NotchGeometry
     var contentHeight: CGFloat = 0
     var notice: String?
+    /// Grouped list: the Idle section is folded at every launch.
+    var idleExpanded = false
     var systemReduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
     /// Full motion by default; the system setting applies only when the user opts in.
     var reduceMotion: Bool { preferences.followReduceMotion && systemReduceMotion }

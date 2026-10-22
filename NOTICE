@@ -7,3 +7,11 @@ Portions of this software are derived from NotchAgent
 licensed under the Apache License, Version 2.0
 (see LICENSES/NotchAgent-Apache-2.0.txt).
 Files derived from NotchAgent carry a header naming the original file.
+
+Agent icons embedded in Sources/PerchApp/Views/AgentIcon.swift:
+- Claude Code, Codex, OpenCode and Pi marks from Lobe Icons
+  (https://github.com/lobehub/lobe-icons), Copyright LobeHub, MIT License.
+- The omp mark from the oh-my-pi website (https://omp.sh,
+  https://github.com/can1357/oh-my-pi), MIT License.
+These marks are trademarks of their respective owners and are used only to
+identify which agent runs in a pane.

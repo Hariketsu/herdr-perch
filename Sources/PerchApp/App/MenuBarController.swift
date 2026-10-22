@@ -17,7 +17,7 @@ final class MenuBarController: NSObject, NSMenuDelegate {
         self.onToggle = onToggle
         self.onSettings = onSettings
         super.init()
-        item.button?.image = Self.birdImage()
+        item.button?.image = Self.ramImage()
         let menu = NSMenu()
         menu.delegate = self
         statusItem.isEnabled = false
@@ -60,15 +60,14 @@ final class MenuBarController: NSObject, NSMenuDelegate {
         NSApp.orderFrontStandardAboutPanel(options: [.credits: credits])
     }
 
-    /// The same pixel bird as the notch, as a template image.
-    private static func birdImage() -> NSImage {
-        let rows = ["..........", ".....##...", "....#.##bb", "....####..", "..######..", "########..", "...#####..", "....b..b.."]
-        let image = NSImage(size: NSSize(width: 18, height: 14), flipped: true) { _ in
-            let cell: CGFloat = 1.6
+    /// The same pixel ram as the notch (prompt face), as a 20×19pt template image.
+    private static func ramImage() -> NSImage {
+        let face = Set(RamSprite.face(.working, stale: false).map { $0.row * 100 + $0.col })
+        let image = NSImage(size: NSSize(width: 20, height: 19), flipped: true) { _ in
             NSColor.black.setFill()
-            for (y, row) in rows.enumerated() {
-                for (x, c) in row.enumerated() where c != "." {
-                    NSRect(x: 1 + CGFloat(x) * cell, y: 0.6 + CGFloat(y) * cell, width: cell, height: cell).fill()
+            for (y, row) in RamSprite.grid.enumerated() {
+                for (x, c) in row.enumerated() where c != "." && !face.contains(y * 100 + x) {
+                    NSRect(x: x, y: y, width: 1, height: 1).fill()
                 }
             }
             return true

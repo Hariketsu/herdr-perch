@@ -1,6 +1,7 @@
 import Foundation
 
 enum ListStyle: String {
+    case grouped
     case heroAndRows
     case rowsOnly
 }
@@ -13,7 +14,7 @@ enum DisplayPlacement: String {
 /// User settings (product.md §8). Missing or unknown values fall back to defaults.
 struct Preferences: Equatable {
     var compactStyle: CompactStyle = .birdCount
-    var listStyle: ListStyle = .heroAndRows
+    var listStyle: ListStyle = .grouped
     var autoExpandOnBlocked = true
     var displayPlacement: DisplayPlacement = .builtInNotch
     var launchAtLogin = false

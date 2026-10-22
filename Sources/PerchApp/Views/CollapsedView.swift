@@ -1,9 +1,9 @@
 import PerchCore
 import SwiftUI
 
-/// The collapsed band: small bird in the left ear, A/B/C summary in the right
+/// The collapsed band: pixel ram in the left ear, A/B/C summary in the right
 /// ear, the camera housing in between. Like Vibe Island it fades out as the
-/// notch opens (the bird reappears on each row) and back in as it closes.
+/// notch opens (the ram reappears on each row) and back in as it closes.
 struct CollapsedBand: View {
     var summary: CompactSummary
     var style: CompactStyle
@@ -14,7 +14,7 @@ struct CollapsedBand: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            PixelBird(status: summary.birdStatus, stale: summary.allStale, size: 12)
+            PixelRam(status: summary.birdStatus, stale: summary.allStale)
                 .padding(.leading, 9)
                 .frame(width: wingWidth, alignment: .leading)
             // Flexible so each ear can ride its own edge of an animating shape.

@@ -533,6 +533,57 @@ extension PresentationState {
 - 屏幕变化：监听 `didChangeScreenParametersNotification` 立即重新定位；显示器设置只有内建刘海屏和主显示器两种。
 - 层级：`.statusBar`，`[.canJoinAllSpaces, .stationary, .fullScreenAuxiliary]`，App 为 `.accessory`。
 
+### 6.2 分组列表、像素公羊与 Agent 图标（v1.2）
+
+依据 2026-10-22 的 HTML 原型（`designs/perch-notch/`，不入库）：列表 B 布局、公羊"羊角 · 中"、单色图标，均已获用户确认。
+
+```swift
+enum ListStyle: String {
+    case grouped                                  // 新增，默认值；设置里叫 "Grouped"
+    case heroAndRows, rowsOnly                    // 保留为可选项（"Detailed" / "Compact"）
+}
+
+/// 分组列表的分组。纯逻辑（PerchApp/Presentation/ListGroups.swift）。
+enum ListGroups {
+    /// 按 blocked → finished → working → idle 的顺序返回非空分组；组内保持 rows 的原顺序。
+    /// stale 的行按其 status 归组（视图负责用灰色显示）。
+    static func make(_ rows: [AgentRow]) -> [(status: DisplayStatus, rows: [AgentRow])]
+}
+
+/// 像素公羊（PerchApp/Views/PixelRam.swift 里的数据部分）。20×19 格，每格 1pt（Retina 上 2 物理像素）。
+enum RamSprite {
+    /// 19 行、每行 20 个字符：W 头；角 L 高光 / H 底色 / S 内侧阴影 / R 横纹；"." 空（刘海是黑的，缝隙和五官都是空格）。
+    static let grid: [String]
+    /// 从头上挖空的五官格 (row, col)。idle → 闭眼 "‿"；其余状态 → 提示符 ">-"。stale 一律闭眼。
+    static func face(_ status: DisplayStatus, stale: Bool) -> [(row: Int, col: Int)]
+    /// 颜色：头为状态色（Palette.color）；角按状态取四个色阶 [L, H, S, R]：
+    /// blocked  #FDBA74 #FB923C #FA8228 #EA580C
+    /// working  #93C5FD #60A5FA #4F93F8 #2563EB
+    /// finished #86EFAC #4ADE80 #34D06F #16A34A
+    /// idle     头 #55555C，角 #A5A5AE #8A8A93 #7A7A83 #63636B
+    /// stale    头 #3A3A40，角 #5E5E66 #50505A #48484F #3C3C42
+    static func hornTones(_ status: DisplayStatus, stale: Bool) -> [UInt32]   // 4 个 0xRRGGBB
+    static func headTone(_ status: DisplayStatus, stale: Bool) -> UInt32
+}
+
+/// Agent 的单色图标（PerchApp/Views/AgentIcon.swift）。SVG 以字符串内嵌（不用 SwiftPM 资源包，
+/// 手工拼的 .app 里 Bundle.module 找不到会崩溃）；NSImage(data:) 加载、isTemplate = true，按前景色着色。
+/// 来源：lobe-icons（MIT）的 claudecode / codex / opencode / pi，以及 omp.sh 页头的 π 标志（oh-my-pi，MIT），署名写进 NOTICE。
+enum AgentIcon {
+    /// agentLabel → 内嵌 SVG 的名字；不区分大小写。
+    /// "Claude"→"claudecode"，"Codex"→"codex"，"OMP"→"omp"，"OpenCode"→"opencode"，"pi"→"pi"；其余返回 nil（视图退回灰色文字标签）。
+    static func name(for agentLabel: String) -> String?
+}
+```
+
+视图要求（数值同原型）：
+
+- 展开态顶部条左侧显示状态统计（"1 need you · 1 done · 2 working · 2 idle"，带 6pt 圆点，只列非零项，来自 `CompactSummary.counts`），三种列表样式都显示；右侧仍是齿轮。
+- Grouped：组标题为大写小字（NEEDS YOU / DONE / WORKING / IDLE + 数量）。非 idle 组每行是卡片：公羊 | 标题（13pt semibold）/ 副行"状态文字 · 项目 · 时长"（11pt，状态文字用状态色）| 图标 | 悬停箭头；卡片底色 blocked 橙 10%、finished 绿 8%、working 白 4%。
+- Idle 组默认折叠为一行"› IDLE n"加最多 6 个不动的小公羊；点击展开为单行列表（公羊 | 标题 12pt、白 62% | 项目 | 图标 | 时长）。展开状态只存在内存里（NotchModel），每次启动都是折叠。
+- 图标 13pt，白 50%，悬停行时白 75%；不再显示彩色的 Agent 文字标签。
+- 公羊用 Canvas 逐格绘制；只有 blocked（非 stale）套 LayerLoop 跳动并在左上角显示 "!"；其他状态静止（见 6.1 的 CPU 结论）。收起态左耳、各列表样式都用公羊替换小鸟。
+
 ## 7. 异常处理一览
 
 | 场景 | 行为 |

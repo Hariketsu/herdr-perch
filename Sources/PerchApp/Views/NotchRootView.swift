@@ -103,6 +103,11 @@ private struct ExpandedContent: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
+                // Only the strip left of the camera housing is free.
+                StatusSummary(counts: model.summary.counts)
+                    .padding(.leading, 18)
+                    .frame(maxWidth: max(0, (model.shapeSize.width - model.geometry.centerWidth) / 2 - 8),
+                           alignment: .leading)
                 Spacer()
                 // Settings live in the notch too: menu-bar managers like Ice can hide or
                 // displace the status item behind the notch, making it unreachable.
@@ -121,7 +126,7 @@ private struct ExpandedContent: View {
             // its height does not depend on the width of the moment. (A hidden duplicate
             // used for measuring doubled the view graph that hover hit-testing walks.)
             AgentList(rows: model.store.rows, style: model.preferences.listStyle,
-                      cleanTitles: model.preferences.cleanTitles,
+                      cleanTitles: model.preferences.cleanTitles, idleExpanded: $model.idleExpanded,
                       notice: model.notice, onActivate: model.activate)
                 .fixedSize(horizontal: false, vertical: true)
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { model.contentHeight = $0 }

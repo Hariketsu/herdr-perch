@@ -7,3 +7,4 @@ Tests/E2E/.venv/
 __pycache__/
 /.worktrees/
 /designs/
+/handoff/

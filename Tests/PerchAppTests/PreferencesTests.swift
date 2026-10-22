@@ -17,6 +17,7 @@ import Testing
         #expect(preferences.displayPlacement == .builtInNotch)
         #expect(!preferences.launchAtLogin)
         #expect(preferences.followReduceMotion == false)
+        #expect(preferences.cleanTitles)
     }
 
     @Test func defaultsAndMissingKeys() throws {
@@ -26,7 +27,7 @@ import Testing
         }
     }
 
-    @Test func allSixKeysAndRoundTrip() throws {
+    @Test func allSevenKeysAndRoundTrip() throws {
         try withDefaults { defaults, name in
             var preferences = Preferences()
             preferences.compactStyle = .counts
@@ -35,16 +36,18 @@ import Testing
             preferences.displayPlacement = .mainDisplay
             preferences.launchAtLogin = true
             preferences.followReduceMotion = true
+            preferences.cleanTitles = false
             preferences.save(to: defaults)
             #expect(Preferences.load(from: defaults) == preferences)
             let persisted = try #require(defaults.persistentDomain(forName: name))
-            #expect(Set(persisted.keys) == ["compactStyle", "listStyle", "autoExpandOnBlocked", "displayPlacement", "launchAtLogin", "followReduceMotion"])
+            #expect(Set(persisted.keys) == ["compactStyle", "listStyle", "autoExpandOnBlocked", "displayPlacement", "launchAtLogin", "followReduceMotion", "cleanTitles"])
             #expect(defaults.string(forKey: "compactStyle") == "C")
             #expect(defaults.string(forKey: "listStyle") == "rowsOnly")
             #expect(defaults.object(forKey: "autoExpandOnBlocked") as? Bool == false)
             #expect(defaults.string(forKey: "displayPlacement") == "mainDisplay")
             #expect(defaults.object(forKey: "launchAtLogin") as? Bool == true)
             #expect(defaults.object(forKey: "followReduceMotion") as? Bool == true)
+            #expect(defaults.object(forKey: "cleanTitles") as? Bool == false)
         }
     }
 
@@ -55,13 +58,15 @@ import Testing
             defaults.set(false, forKey: "autoExpandOnBlocked")
             defaults.set("mainDisplay", forKey: "displayPlacement")
             defaults.set(true, forKey: "launchAtLogin")
+            defaults.set(false, forKey: "cleanTitles")
             let preferences = Preferences.load(from: defaults)
             #expect(preferences.compactStyle == .dots)
             #expect(preferences.listStyle == .rowsOnly)
             #expect(!preferences.autoExpandOnBlocked)
             #expect(preferences.displayPlacement == .mainDisplay)
             #expect(preferences.launchAtLogin)
-            #expect(preferences.followReduceMotion == false) // Existing five-key preferences omit the new key.
+            #expect(preferences.followReduceMotion == false) // Missing key uses its default.
+            #expect(!preferences.cleanTitles)
         }
     }
 
@@ -88,6 +93,7 @@ import Testing
             defaults.set(["enabled": true], forKey: "autoExpandOnBlocked")
             defaults.set(["screen": "main"], forKey: "displayPlacement")
             defaults.set([true], forKey: "launchAtLogin")
+            defaults.set("false", forKey: "cleanTitles")
             expectDefaults(Preferences.load(from: defaults))
         }
     }
@@ -98,6 +104,7 @@ import Testing
             preferences.compactStyle = .dots
             preferences.launchAtLogin = true
             preferences.followReduceMotion = true
+            preferences.cleanTitles = false
             preferences.save(to: defaults)
             Preferences().save(to: defaults)
             expectDefaults(Preferences.load(from: defaults))

@@ -12,7 +12,7 @@ import Testing
 
     private func expectDefaults(_ preferences: Preferences) {
         #expect(preferences.compactStyle == .birdCount)
-        #expect(preferences.listStyle == .heroAndRows)
+        #expect(preferences.listStyle == .grouped)
         #expect(preferences.autoExpandOnBlocked)
         #expect(preferences.displayPlacement == .builtInNotch)
         #expect(!preferences.launchAtLogin)
@@ -70,6 +70,16 @@ import Testing
         }
     }
 
+    @Test func groupedListStyleRoundTrip() throws {
+        try withDefaults { defaults, _ in
+            var preferences = Preferences()
+            preferences.listStyle = .grouped
+            preferences.save(to: defaults)
+            #expect(defaults.string(forKey: "listStyle") == "grouped")
+            #expect(Preferences.load(from: defaults) == preferences)
+        }
+    }
+
     @Test func unknownEnumValuesFallBackWithoutLosingRecognizedSettings() throws {
         try withDefaults { defaults, _ in
             defaults.set("future-style", forKey: "compactStyle")
@@ -79,7 +89,7 @@ import Testing
             defaults.set(true, forKey: "launchAtLogin")
             let preferences = Preferences.load(from: defaults)
             #expect(preferences.compactStyle == .birdCount)
-            #expect(preferences.listStyle == .heroAndRows)
+            #expect(preferences.listStyle == .grouped)
             #expect(preferences.displayPlacement == .builtInNotch)
             #expect(!preferences.autoExpandOnBlocked)
             #expect(preferences.launchAtLogin)

@@ -6,6 +6,7 @@ import SwiftUI
 struct AgentList: View {
     var rows: [AgentRow]
     var style: ListStyle
+    var cleanTitles: Bool
     var notice: String?
     var onActivate: (AgentRow) -> Void
 
@@ -21,9 +22,10 @@ struct AgentList: View {
                 VStack(spacing: 2) {
                     ForEach(rows) { row in
                         Button { onActivate(row) } label: {
+                            let shown = cleanTitles ? cleaned(row) : row
                             switch style {
-                            case .heroAndRows: DetailedRow(row: row, now: context.date)
-                            case .rowsOnly: CompactRow(row: row, now: context.date)
+                            case .heroAndRows: DetailedRow(row: shown, now: context.date)
+                            case .rowsOnly: CompactRow(row: shown, now: context.date)
                             }
                         }
                         .buttonStyle(RowButtonStyle())
@@ -162,6 +164,14 @@ private struct RowButtonStyle: ButtonStyle {
 
 private extension EnvironmentValues {
     @Entry var rowHovered = false
+}
+
+/// The row with prompt prefixes and icons stripped from its title and subtitle (Settings › Clean titles).
+private func cleaned(_ row: AgentRow) -> AgentRow {
+    var row = row
+    row.title = TitleCleaner.clean(row.title)
+    row.subtitle = row.subtitle.map(TitleCleaner.clean).flatMap { $0 == row.title ? nil : $0 }
+    return row
 }
 
 /// Status line text, only from Herdr fields (product.md §3).

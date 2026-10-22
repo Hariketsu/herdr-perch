@@ -260,6 +260,19 @@ public enum RowBuilder {
     /// 排序：status 优先级 → since 倒序 → session 名 → paneID（保证稳定）。
     public static func rows(_ sessions: [SessionState], clock: inout StatusClock, now: Date) -> [AgentRow]
 }
+
+/// 去掉 Agent 写进终端标题的提示符前缀和图标，例如 OMP 的 "π > 󰈙 DOCS: …"。
+/// AgentRow 保留原始标题（StateTrace 照常输出原文）；是否清理由呈现层按设置决定。
+public enum TitleCleaner {
+    /// 按顺序从开头去掉，每步之前都跳过空白：
+    /// 1. 一个 "π"，仅当它后面是空白时（"πr²" 不动）；
+    /// 2. 一个状态符：">" 或盲文字符 U+2800–U+28FF（Working 时的转圈）；
+    /// 3. 任意个图标：私有区 U+E000–U+F8FF、U+F0000–U+FFFFD、U+100000–U+10FFFD（Nerd Font），
+    ///    以及 emoji / 符号（Unicode 类别 So；含变体选择符 U+FE0F 等附着字符）；
+    /// 最后去掉首尾空白。只处理开头：标题中间的同类字符原样保留。
+    /// 清理结果为空时返回原文（去掉首尾空白后的）。字母、数字、CJK、"DOCS:" 这类大写前缀都保留。
+    public static func clean(_ title: String) -> String
+}
 ```
 
 ### 4.5 运行时（`PerchCore/Runtime`）

@@ -128,6 +128,8 @@ private struct DisplayPage: View {
                 Text("Compact").tag(ListStyle.rowsOnly)
             }
             Divider()
+            Toggle("Clean agent titles (strip “π >” prompts and icons)", isOn: savedBinding(model, \.cleanTitles))
+            Divider()
             Toggle("Follow system “Reduce motion”", isOn: savedBinding(model, \.followReduceMotion))
         }
     }

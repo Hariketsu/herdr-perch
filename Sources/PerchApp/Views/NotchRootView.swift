@@ -121,6 +121,7 @@ private struct ExpandedContent: View {
             // its height does not depend on the width of the moment. (A hidden duplicate
             // used for measuring doubled the view graph that hover hit-testing walks.)
             AgentList(rows: model.store.rows, style: model.preferences.listStyle,
+                      cleanTitles: model.preferences.cleanTitles,
                       notice: model.notice, onActivate: model.activate)
                 .fixedSize(horizontal: false, vertical: true)
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { model.contentHeight = $0 }

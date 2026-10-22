@@ -34,12 +34,12 @@
 
 ## Requirements
 
-- macOS 14 Sonoma or later. Built for MacBooks with a notch; on other displays Perch draws a notch-shaped panel at the top of the screen.
+- macOS 14 Sonoma or later on Apple silicon. Built for MacBooks with a notch; on other displays Perch draws a notch-shaped panel at the top of the screen.
 - [Herdr](https://github.com/herdrdev/herdr) 0.9.5 or later, running locally.
 
 ## Install
 
-Download `Herdr Perch.app` from the [latest release](https://github.com/Hariketsu/herdr-perch/releases/latest) and move it to `/Applications`.
+Download `Herdr-Perch-<version>.dmg` from the [latest release](https://github.com/Hariketsu/herdr-perch/releases/latest), open it and drag **Herdr Perch** into **Applications**.
 
 The app is not notarized yet, so macOS blocks it the first time you open it. To allow it, open **System Settings → Privacy & Security**, scroll down and click **Open Anyway** next to the message about Herdr Perch. You only need to do this once.
 
@@ -74,6 +74,7 @@ git clone https://github.com/Hariketsu/herdr-perch.git
 cd herdr-perch
 scripts/bundle.sh          # builds dist/Herdr Perch.app
 open "dist/Herdr Perch.app"
+scripts/make-dmg.sh        # optional: dist/Herdr-Perch-<version>.dmg
 ```
 
 Tests:

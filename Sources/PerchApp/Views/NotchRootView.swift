@@ -100,14 +100,15 @@ private struct ReflowingFrame: ViewModifier, Animatable {
 private struct ExpandedContent: View {
     @Bindable var model: NotchModel
 
+    /// The strip left of the camera housing in the open notch.
+    private var summaryWidth: CGFloat {
+        let open = model.geometry.expandedSize(contentHeight: model.contentHeight, wingWidth: model.wingWidth)
+        return max(0, (open.width - model.geometry.centerWidth) / 2 - 8)
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
-                // Only the strip left of the camera housing is free.
-                StatusSummary(counts: model.summary.counts)
-                    .padding(.leading, 18)
-                    .frame(maxWidth: max(0, (model.shapeSize.width - model.geometry.centerWidth) / 2 - 8),
-                           alignment: .leading)
                 Spacer()
                 // Settings live in the notch too: menu-bar managers like Ice can hide or
                 // displace the status item behind the notch, making it unreachable.
@@ -122,6 +123,14 @@ private struct ExpandedContent: View {
             }
             .padding(.trailing, 14)
             .frame(height: model.geometry.bandHeight)
+            // Status counts ride the left edge like the gear rides the right one. Sized
+            // for the open notch rather than the animating width, so the words-or-numbers
+            // choice is made once and nothing reflows while the shape springs open.
+            .overlay(alignment: .leading) {
+                StatusSummary(counts: model.summary.counts)
+                    .padding(.leading, 18)
+                    .frame(width: summaryWidth, alignment: .leading)
+            }
             // Measured in place: the list is always mounted, and rows are single-line so
             // its height does not depend on the width of the moment. (A hidden duplicate
             // used for measuring doubled the view graph that hover hit-testing walks.)

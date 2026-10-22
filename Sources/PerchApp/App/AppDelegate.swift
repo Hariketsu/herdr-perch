@@ -29,6 +29,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         store.start()
         window.show()
         handleTerminationSignal()
+        if ProcessInfo.processInfo.environment["PERCH_TEST_HOOKS"] == "1" { observeTestHooks() }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -43,6 +44,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Task { @MainActor in
                 self?.model.rowsDidChange()
                 self?.observeRows()
+            }
+        }
+    }
+
+    /// Distributed notifications that pin open / collapse the notch without posting pointer events (`scripts/perf.sh --static`).
+    /// Only registered with `PERCH_TEST_HOOKS=1`, so a normal launch doesn't let other processes drive the notch.
+    private func observeTestHooks() {
+        let center = DistributedNotificationCenter.default()
+        center.addObserver(forName: .init("dev.herdr.perch.test.expand"), object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let model = self?.model, model.surface == .collapsed else { return }
+                model.send(.clicked)
+            }
+        }
+        center.addObserver(forName: .init("dev.herdr.perch.test.collapse"), object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let model = self?.model, model.isExpanded else { return }
+                model.send(.rowActivated)
             }
         }
     }

@@ -109,7 +109,7 @@ func collapse(_ pid: pid_t, _ screen: Screen) {
 }
 
 let args = Array(CommandLine.arguments.dropFirst())
-guard let command = args.first else { fail("expected pid, park, collapse, expand, check, path, move, or wiggle") }
+guard let command = args.first else { fail("expected pid, park, collapse, expand, check, path, move, wiggle, post, or still") }
 switch command {
 case "pid":
     guard args.count == 2 else { fail("pid <app executable>") }
@@ -169,6 +169,23 @@ case "wiggle":
         let phase = 0.5 - 0.5 * cos(elapsed * 2 * .pi) // One round trip per second, about 60 events/s.
         move(CGPoint(x: x0 + (x1 - x0) * phase, y: y0 + (y1 - y0) * phase))
         Thread.sleep(forTimeInterval: 1.0 / 60)
+    }
+case "post":
+    // Pointer-free surface control through the app's test hooks.
+    guard args.count == 2, ["expand", "collapse"].contains(args[1]) else { fail("post expand|collapse") }
+    DistributedNotificationCenter.default().postNotificationName(
+        .init("dev.herdr.perch.test.\(args[1])"), object: nil, userInfo: nil, deliverImmediately: true)
+    Thread.sleep(forTimeInterval: 0.6)
+case "still":
+    // Exit 1 if the user moves the pointer within the given seconds; only reads the position.
+    guard args.count == 2 else { fail("still <seconds>") }
+    let duration = number(args[1])
+    func location() -> CGPoint { CGEvent(source: nil)?.location ?? .zero }
+    let origin = location()
+    let started = ProcessInfo.processInfo.systemUptime
+    while ProcessInfo.processInfo.systemUptime - started < duration {
+        if hypot(location().x - origin.x, location().y - origin.y) > 0.5 { exit(1) }
+        Thread.sleep(forTimeInterval: 0.05)
     }
 default: fail("unknown command: \(command)")
 }

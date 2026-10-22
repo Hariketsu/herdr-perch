@@ -44,6 +44,19 @@ enum RamSprite {
         }
     }
 
+    /// Cells grouped by tone character (W, L, H, S, R), with the face punched out.
+    static func paths(status: DisplayStatus, stale: Bool, cell: CGFloat) -> [Character: Path] {
+        let face = Set(face(status, stale: stale).map { $0.row * 100 + $0.col })
+        var paths: [Character: Path] = [:]
+        for (y, row) in grid.enumerated() {
+            for (x, character) in row.enumerated() where character != "." && !face.contains(y * 100 + x) {
+                paths[character, default: Path()].addRect(
+                    CGRect(x: CGFloat(x) * cell, y: CGFloat(y) * cell, width: cell, height: cell))
+            }
+        }
+        return paths
+    }
+
     /// [L, H, S, R]
     static func hornTones(_ status: DisplayStatus, stale: Bool) -> [UInt32] {
         if stale { return [0x5E5E66, 0x50505A, 0x48484F, 0x3C3C42] }
@@ -56,14 +69,15 @@ enum RamSprite {
     }
 }
 
-/// 20×19pt ram drawn cell by cell. Only a blocked ram hops (in a LayerLoop, which
-/// costs a nested hosting view) and shows "!"; every other state is static.
+/// 20×19-cell ram, one path per tone. Lists use 1pt cells; the collapsed ear and the
+/// menu bar use 0.8 so it matches the size of other menu bar icons. Only a blocked ram
+/// hops (in a LayerLoop, which costs a nested hosting view) and shows "!"; every other
+/// state is static.
 struct PixelRam: View {
     var status: DisplayStatus?
     var stale = false
     var animates = true
-
-    static let size = CGSize(width: 20, height: 19)
+    var scale: CGFloat = 1
 
     var body: some View {
         Group {
@@ -75,12 +89,12 @@ struct PixelRam: View {
         }
         .overlay(alignment: .topLeading) {
             if isBlocked {
-                VStack(spacing: 1) {
-                    Rectangle().frame(width: 2, height: 4)
-                    Rectangle().frame(width: 2, height: 1)
+                VStack(spacing: scale) {
+                    Rectangle().frame(width: 2 * scale, height: 4 * scale)
+                    Rectangle().frame(width: 2 * scale, height: scale)
                 }
                 .foregroundStyle(Color(hex: RamSprite.headTone(.blocked, stale: false)))
-                .offset(x: -4)
+                .offset(x: -4 * scale)
             }
         }
         .accessibilityHidden(true)
@@ -88,24 +102,16 @@ struct PixelRam: View {
 
     private var drawing: some View {
         let status = status ?? .idle
-        let head = Color(hex: RamSprite.headTone(status, stale: stale))
-        let horn = RamSprite.hornTones(status, stale: stale).map { Color(hex: $0) }
-        let face = Set(RamSprite.face(status, stale: stale).map { $0.row * 100 + $0.col })
+        let horn = RamSprite.hornTones(status, stale: stale)
+        let tones: [Character: UInt32] = [
+            "W": RamSprite.headTone(status, stale: stale), "L": horn[0], "H": horn[1], "S": horn[2], "R": horn[3],
+        ]
+        let paths = RamSprite.paths(status: status, stale: stale, cell: scale)
         return Canvas { context, _ in
-            for (y, row) in RamSprite.grid.enumerated() {
-                for (x, character) in row.enumerated() where character != "." && !face.contains(y * 100 + x) {
-                    let fill: Color = switch character {
-                    case "L": horn[0]
-                    case "H": horn[1]
-                    case "S": horn[2]
-                    case "R": horn[3]
-                    default: head
-                    }
-                    context.fill(Path(CGRect(x: x, y: y, width: 1, height: 1)), with: .color(fill))
-                }
-            }
+            // One fill per tone: per-cell fills leave hairline seams at fractional scales.
+            for (tone, path) in paths { context.fill(path, with: .color(Color(hex: tones[tone]!))) }
         }
-        .frame(width: Self.size.width, height: Self.size.height)
+        .frame(width: 20 * scale, height: 19 * scale)
     }
 
     private var isBlocked: Bool { status == .blocked && !stale }

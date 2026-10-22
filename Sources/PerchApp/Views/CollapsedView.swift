@@ -14,7 +14,7 @@ struct CollapsedBand: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            PixelRam(status: summary.birdStatus, stale: summary.allStale)
+            PixelRam(status: summary.birdStatus, stale: summary.allStale, scale: 0.8)
                 .padding(.leading, 9)
                 .frame(width: wingWidth, alignment: .leading)
             // Flexible so each ear can ride its own edge of an animating shape.

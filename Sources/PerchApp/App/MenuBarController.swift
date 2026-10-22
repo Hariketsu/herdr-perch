@@ -60,16 +60,17 @@ final class MenuBarController: NSObject, NSMenuDelegate {
         NSApp.orderFrontStandardAboutPanel(options: [.credits: credits])
     }
 
-    /// The same pixel ram as the notch (prompt face), as a 20×19pt template image.
+    /// The same pixel ram as the notch (prompt face) at 0.8 scale, as a 16pt template image.
     private static func ramImage() -> NSImage {
-        let face = Set(RamSprite.face(.working, stale: false).map { $0.row * 100 + $0.col })
-        let image = NSImage(size: NSSize(width: 20, height: 19), flipped: true) { _ in
-            NSColor.black.setFill()
-            for (y, row) in RamSprite.grid.enumerated() {
-                for (x, c) in row.enumerated() where c != "." && !face.contains(y * 100 + x) {
-                    NSRect(x: x, y: y, width: 1, height: 1).fill()
-                }
+        let cell: CGFloat = 0.8
+        let image = NSImage(size: NSSize(width: 16, height: 16), flipped: true) { _ in
+            guard let context = NSGraphicsContext.current?.cgContext else { return false }
+            context.translateBy(x: 0, y: 0.4)  // centre the 15.2pt-tall ram
+            for path in RamSprite.paths(status: .working, stale: false, cell: cell).values {
+                context.addPath(path.cgPath)
             }
+            context.setFillColor(NSColor.black.cgColor)
+            context.fillPath()
             return true
         }
         image.isTemplate = true

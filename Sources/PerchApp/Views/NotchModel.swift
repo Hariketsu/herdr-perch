@@ -20,6 +20,7 @@ final class NotchModel {
 
     @ObservationIgnored private var tickTask: Task<Void, Never>?
     @ObservationIgnored private var blockedRefs: Set<AgentRef> = []
+    @ObservationIgnored private var completions = CompletionDetector()
     @ObservationIgnored private let terminal = TerminalActivator()
 
     init(store: PerchStore, preferences: Preferences, geometry: NotchGeometry) {
@@ -47,6 +48,9 @@ final class NotchModel {
         blockedRefs = blocked
         if !store.rows.isEmpty { notice = staleNotice }
         send(.rowsChanged(hasRows: !store.rows.isEmpty, newBlocked: newBlocked))
+        if let row = completions.observe(store.rows) {
+            send(.agentFinished(title: preferences.cleanTitles ? TitleCleaner.clean(row.title) : row.title))
+        }
     }
 
     func send(_ event: PresentationEvent) {

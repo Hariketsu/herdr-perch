@@ -485,7 +485,19 @@ struct PointerTracker {
 }
 
 enum PresentationEvent { …
-    case agentFinished(title: String)            // 某行新变为 Finished（由 NotchModel 比较前后两次的行得出）
+    case agentFinished(title: String)            // 某行新变为 Finished（由 CompletionDetector 得出）
+}
+
+/// 从相邻两次的行里找出"新完成"的 Agent。纯逻辑（PerchApp/Presentation/CompletionDetector.swift）。
+/// NotchModel.rowsDidChange 每次调用 observe；返回非 nil 时发送 .agentFinished(title:)，
+/// 标题按 Preferences.cleanTitles 决定是否经过 TitleCleaner.clean。
+struct CompletionDetector {
+    /// 第一次调用只记录基线、返回 nil：启动时已经是 Finished 的行不触发反馈。
+    /// 之后返回本次新进入 Finished 的行（上一次不在 Finished 集合里）；只看 isStale == false 的行。
+    /// 同时有多行新完成时，返回 since 最新的一行（相同时取在 rows 中靠前的）。
+    /// 离开 Finished（例如被查看后变为 Idle）或从 rows 中消失的行移出集合，之后再次完成会重新触发。
+    /// stale 的行不在集合里；它恢复后若仍是 Finished，视为新完成。
+    mutating func observe(_ rows: [AgentRow]) -> AgentRow?
 }
 
 extension PresentationState {

@@ -33,6 +33,36 @@ import Testing
         #expect(geometry.collapsedSize(wingWidth: 40) == CGSize(width: 270, height: 32))
     }
 
+    @Test(arguments: [(99.0, 124.0), (99.8, 124.0), (100.0, 126.0), (100.2, 126.0)])
+    func noNotchUsesMenuBarHeightAndRoundsOpenHeights(_ content: Double, _ expected: Double) {
+        let geometry = NotchGeometry(metrics: NotchScreenMetrics(frame: screenFrame, safeAreaTop: 0, menuBarHeight: 25))
+        #expect(!geometry.hasNotch)
+        #expect(geometry.bandHeight == 25)
+        #expect(geometry.collapsedSize(wingWidth: 40).height == 25)
+        #expect(geometry.expandedSize(contentHeight: CGFloat(content), wingWidth: 40).height == CGFloat(expected))
+        #expect(geometry.peekSize(contentHeight: CGFloat(content), wingWidth: 40).height == CGFloat(expected))
+    }
+
+    @Test func autoHiddenMenuBarFallsBackTo32Points() {
+        let geometry = NotchGeometry(metrics: NotchScreenMetrics(frame: screenFrame, safeAreaTop: 0, menuBarHeight: 0))
+        #expect(!geometry.hasNotch)
+        #expect(geometry.bandHeight == 32)
+        #expect(geometry.collapsedSize(wingWidth: 40).height == 32)
+        #expect(geometry.expandedSize(contentHeight: 100, wingWidth: 40).height == 132)
+        #expect(geometry.peekSize(contentHeight: 100, wingWidth: 40).height == 132)
+    }
+
+    @Test func physicalNotchHeightTakesPrecedenceOverMenuBarHeight() {
+        var metrics = notchedMetrics(safeAreaTop: 32)
+        metrics.menuBarHeight = 24
+        let geometry = NotchGeometry(metrics: metrics)
+        #expect(geometry.hasNotch)
+        #expect(geometry.bandHeight == 32)
+        #expect(geometry.collapsedSize(wingWidth: 40).height == 32)
+        #expect(geometry.expandedSize(contentHeight: 100, wingWidth: 40).height == 132)
+        #expect(geometry.peekSize(contentHeight: 100, wingWidth: 40).height == 132)
+    }
+
     @Test(arguments: [0, 79, 80, 400, 401])
     func invalidGapFallsBack(_ gap: Int) {
         let geometry = NotchGeometry(metrics: notchedMetrics(gap: CGFloat(gap), safeAreaTop: 38))

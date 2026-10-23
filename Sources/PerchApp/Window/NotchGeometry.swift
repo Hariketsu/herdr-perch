@@ -5,12 +5,16 @@ struct NotchScreenMetrics: Equatable {
     var safeAreaTop: CGFloat
     var auxiliaryTopLeftArea: CGRect?
     var auxiliaryTopRightArea: CGRect?
+    /// 0 when the menu bar hides automatically.
+    var menuBarHeight: CGFloat
 
-    init(frame: CGRect, safeAreaTop: CGFloat, auxiliaryTopLeftArea: CGRect? = nil, auxiliaryTopRightArea: CGRect? = nil) {
+    init(frame: CGRect, safeAreaTop: CGFloat, auxiliaryTopLeftArea: CGRect? = nil, auxiliaryTopRightArea: CGRect? = nil,
+         menuBarHeight: CGFloat = 0) {
         self.frame = frame
         self.safeAreaTop = safeAreaTop
         self.auxiliaryTopLeftArea = auxiliaryTopLeftArea
         self.auxiliaryTopRightArea = auxiliaryTopRightArea
+        self.menuBarHeight = menuBarHeight
     }
 
     init(screen: NSScreen) {
@@ -18,7 +22,8 @@ struct NotchScreenMetrics: Equatable {
             frame: screen.frame,
             safeAreaTop: screen.safeAreaInsets.top,
             auxiliaryTopLeftArea: screen.auxiliaryTopLeftArea,
-            auxiliaryTopRightArea: screen.auxiliaryTopRightArea)
+            auxiliaryTopRightArea: screen.auxiliaryTopRightArea,
+            menuBarHeight: screen.frame.maxY - screen.visibleFrame.maxY)
     }
 }
 
@@ -47,7 +52,11 @@ struct NotchGeometry: Equatable {
 
     var hasNotch: Bool { notchWidth != nil }
     var centerWidth: CGFloat { notchWidth ?? Self.floatingCenterWidth }
-    var bandHeight: CGFloat { hasNotch ? metrics.safeAreaTop : Self.fallbackBandHeight }
+    /// Without a notch, as tall as the menu bar (25pt on a typical external display), so it doesn't hang below it.
+    var bandHeight: CGFloat {
+        if hasNotch { return metrics.safeAreaTop }
+        return metrics.menuBarHeight > 0 ? metrics.menuBarHeight : Self.fallbackBandHeight
+    }
 
     func collapsedSize(wingWidth: CGFloat) -> CGSize {
         CGSize(width: centerWidth + 2 * wingWidth, height: bandHeight)

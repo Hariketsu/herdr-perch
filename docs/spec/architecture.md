@@ -418,6 +418,7 @@ struct NotchScreenMetrics: Equatable {
     var safeAreaTop: CGFloat
     var auxiliaryTopLeftArea: CGRect?
     var auxiliaryTopRightArea: CGRect?
+    var menuBarHeight: CGFloat = 0       // frame.maxY − visibleFrame.maxY；菜单栏自动隐藏时为 0（2026-10-23 新增）
     init(screen: NSScreen)               // 产品代码使用；测试直接用成员初始化
 }
 
@@ -430,7 +431,9 @@ struct NotchGeometry: Equatable {
     /// safeAreaTop > 0，且 auxiliaryTopRightArea.minX − auxiliaryTopLeftArea.maxX 在 (80, 400) 之间（搬自 NotchAgent）
     var hasNotch: Bool { get }
     var centerWidth: CGFloat { get }     // 有刘海：上述间距；否则 floatingCenterWidth
-    var bandHeight: CGFloat { get }      // 有刘海：safeAreaTop；否则 fallbackBandHeight
+    /// 有刘海：safeAreaTop；否则 menuBarHeight（> 0 时），再否则 fallbackBandHeight。
+    /// 2026-10-23 修复：外接屏菜单栏 25pt，原来固定 32pt，刘海比菜单栏多出 7pt、压住下面的窗口。
+    var bandHeight: CGFloat { get }
     func collapsedSize(wingWidth: CGFloat) -> CGSize                 // (centerWidth + 2 × wing, bandHeight)
     /// 宽 = max(collapsed 宽, min(expandedWidth, frame.width − 24))；
     /// 高 = min(bandHeight + contentHeight, maxExpandedHeight, frame.height × 0.72)，四舍五入到偶数

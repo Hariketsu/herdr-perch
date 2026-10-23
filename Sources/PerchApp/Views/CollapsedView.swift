@@ -7,7 +7,6 @@ import SwiftUI
 struct CollapsedBand: View {
     var summary: CompactSummary
     var style: CompactStyle
-    var completion: String?       // "✓ title" feedback replaces the right ear briefly
     var centerWidth: CGFloat
     var wingWidth: CGFloat
     var height: CGFloat
@@ -24,18 +23,10 @@ struct CollapsedBand: View {
                 .frame(width: wingWidth, alignment: .trailing)
         }
         .frame(height: height)
-        .animation(Palette.open, value: completion)
     }
 
     @ViewBuilder private var right: some View {
-        if let completion {
-            HStack(spacing: 4) {
-                Image(systemName: "checkmark").font(.system(size: 9, weight: .bold))
-                Text(completion).font(.system(size: 10.5, weight: .semibold)).lineLimit(1)
-            }
-            .foregroundStyle(Palette.finishedBright)
-            .transition(.opacity.combined(with: .scale(scale: 0.96)))
-        } else if summary.total > 0 {
+        if summary.total > 0 {
             switch style {
             case .birdCount:
                 // Vibe Island's Clean style: a bare number.

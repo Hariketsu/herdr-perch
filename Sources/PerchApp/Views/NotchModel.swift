@@ -7,7 +7,7 @@ import PerchCore
 final class NotchModel {
     let store: PerchStore
     var preferences: Preferences {
-        didSet { presentation.handle(.settingsChanged(preferences.alerts), now: .now) }
+        didSet { presentation.handle(.settingsChanged(peekOnFinished: preferences.peekOnFinished), now: .now) }
     }
     var geometry: NotchGeometry
     var contentHeight: CGFloat = 0
@@ -28,14 +28,11 @@ final class NotchModel {
         self.store = store
         self.preferences = preferences
         self.geometry = geometry
-        presentation = PresentationState(alerts: preferences.alerts)
+        presentation = PresentationState(peekOnFinished: preferences.peekOnFinished)
     }
 
     var summary: CompactSummary { CompactSummary.make(store.rows) }
-    /// The ear widens while it shows "✓ title" (FinishedAlert.ear).
-    var wingWidth: CGFloat {
-        completionTitle == nil ? summary.wingWidth(preferences.compactStyle) : NotchGeometry.maxWingWidth
-    }
+    var wingWidth: CGFloat { summary.wingWidth(preferences.compactStyle) }
     var surface: Surface { presentation.surface }
     var isExpanded: Bool { if case .expanded = surface { true } else { false } }
     var isPeeking: Bool { surface == .peek }
@@ -49,12 +46,6 @@ final class NotchModel {
         case .peek: geometry.peekSize(contentHeight: peekContentHeight, wingWidth: wingWidth)
         case .hidden, .collapsed: geometry.collapsedSize(wingWidth: wingWidth)
         }
-    }
-
-    /// Title for the collapsed "✓ title" ear, if its agent is still listed.
-    var completionTitle: String? {
-        guard let ref = presentation.completion, let row = store.rows.first(where: { $0.id == ref }) else { return nil }
-        return preferences.cleanTitles ? TitleCleaner.clean(row.title) : row.title
     }
 
     func rowsDidChange() {

@@ -92,16 +92,7 @@ private struct GeneralPage: View {
 
     var body: some View {
         Section(title: "Behavior") {
-            Picker("When an agent is blocked", selection: savedBinding(model, \.blockedAlert)) {
-                Text("Peek").tag(BlockedAlert.peek)
-                Text("Expand the list").tag(BlockedAlert.expand)
-                Text("Bounce the notch").tag(BlockedAlert.pulse)
-            }
-            Picker("When an agent finishes", selection: savedBinding(model, \.finishedAlert)) {
-                Text("Peek").tag(FinishedAlert.peek)
-                Text("Show ✓ in the notch").tag(FinishedAlert.ear)
-                Text("Nothing").tag(FinishedAlert.off)
-            }
+            Toggle("Peek when an agent finishes", isOn: savedBinding(model, \.peekOnFinished))
             Divider()
             Toggle("Launch at login", isOn: Binding(
                 get: { model.preferences.launchAtLogin },
@@ -156,7 +147,7 @@ private struct NotchPreview: View {
             LinearGradient(colors: [Color(hex: 0x2563EB), Color(hex: 0x7C3AED), Color(hex: 0xF97316)],
                            startPoint: .topLeading, endPoint: .bottomTrailing)
             NotchShape(bottomRadius: 10).fill(.black).frame(width: size.width, height: size.height)
-            CollapsedBand(summary: model.summary, style: model.preferences.compactStyle, completion: nil,
+            CollapsedBand(summary: model.summary, style: model.preferences.compactStyle,
                           centerWidth: geometry.centerWidth, wingWidth: model.wingWidth,
                           height: geometry.bandHeight)
                 .frame(width: size.width)

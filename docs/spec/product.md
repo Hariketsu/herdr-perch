@@ -57,12 +57,12 @@ Perch 展示 4 种状态，全部由 Herdr 的 `agent_status` 直接映射：
 
 | 事件 | 行为 |
 |---|---|
-| 某 Agent 变为 Blocked，且刘海处于收起态 | 弹出 **Peek 速览**：只显示需要处理的卡片，8s 后自动收起，悬停可展开完整列表（2026-10-23 起，见 architecture.md §6.3；设置可改为完整展开或只跳动） |
-| 自动打开的列表 8s 内没有任何指针交互 | 平滑收起回收起态，琥珀色呼吸光继续提示 |
-| 用户 hover 或点击过自动打开的列表 | 视为已介入，不再自动收起 |
-| Agent 变为 Finished | 弹出 Peek 速览（绿色卡片），4s 后自动收起（2026-10-23 起；设置可改为收起态加宽显示"✓ 标题"约 2s，或不提醒） |
+| 某 Agent 变为 Blocked，且刘海处于收起态 | 弹出 **Peek 速览**：只显示需要处理的卡片，8s 后自动收起，悬停可展开完整列表（2026-10-23 起，见 architecture.md §6.3） |
+| Peek 期间 hover | 长成完整列表，按普通展开处理；点击卡片直接跳转 |
+| Peek 期间事件已解除（例如在终端里处理了 Blocked） | 卡片移除，全部移除时提前收起 |
+| Agent 变为 Finished | 弹出 Peek 速览（绿色卡片），4s 后自动收起（2026-10-23 起；设置可关闭）。原先的"收起态加宽显示 ✓ 标题"已删除 |
 | Herdr 连接断开或版本过低 | 弹出 Peek 系统卡片，6s 后自动收起 |
-| 全屏 App 或演示中 | 面板位于 `.statusBar` 层级，并带 `fullScreenAuxiliary`，仍然可见；提醒仍只是自动展开 |
+| 全屏 App 或演示中 | 面板位于 `.statusBar` 层级，并带 `fullScreenAuxiliary`，仍然可见；提醒仍只是 Peek |
 
 不使用系统通知中心（v1）。不做红点计数徽标。不做提示音：Herdr 自带提示音（2026-10-20 确认）。
 
@@ -108,8 +108,7 @@ Perch 展示 4 种状态，全部由 Herdr 的 `agent_status` 直接映射：
 |---|---|---|---|
 | 外观 | 收起态样式 | A 小鸟 + 数量 / B 每个 Agent 一个点 / C 按状态计数 | A（贴近 Vibe Island 的 Clean） |
 | 外观 | 列表样式 | 按状态分组（Grouped）/ 大行 + 普通行（Detailed）/ 全部普通行（Compact） | 按状态分组（2026-10-22 起，见 architecture.md §6.2） |
-| 行为 | Blocked 时（When an agent is blocked） | Peek 速览 / 完整展开 / 只跳动 | Peek 速览（2026-10-23 起；旧设置"自动展开"关闭的迁移为只跳动） |
-| 行为 | 完成时（When an agent finishes） | Peek 速览 / 收起态显示 ✓ 标题 / 不提醒 | Peek 速览 |
+| 行为 | 完成时弹出 Peek（Peek when an agent finishes） | 开 / 关 | 开（2026-10-23 起；Blocked 总是弹出 Peek，没有开关） |
 | 行为 | 显示器 | 内建刘海屏 / 主显示器 | 内建刘海屏 |
 | 外观 | 跟随系统"减少动态效果" | 开 / 关 | 关（始终播放完整动画） |
 | 外观 | 清理标题前缀（Clean agent titles） | 开 / 关 | 开 |

@@ -37,7 +37,6 @@ enum Palette {
     static let open = Animation.spring(response: 0.36, dampingFraction: 0.9)
     static let close = Animation.spring(response: 0.36, dampingFraction: 0.95)
     static let radius = Animation.easeOut(duration: 0.3)
-    static let pop = Animation.spring(response: 0.3, dampingFraction: 0.5)
 }
 
 extension Color {

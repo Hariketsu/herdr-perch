@@ -362,7 +362,7 @@ public struct Jumper: Sendable {
 沿用 NotchAgent 骨架（`NotchPanel`、`NotchGeometry`、"变大先改 frame、变小后改 frame" + `transitionRevision`）。v1 去掉 `canBecomeKey`（没有输入框）。
 
 ```swift
-enum Surface: Equatable { case hidden, collapsed, expanded(pinned: Bool, auto: Bool) }
+enum Surface: Equatable { case hidden, collapsed, expanded(pinned: Bool, auto: Bool) }   // v1.3 起见 §6.3：新增 peek，去掉 auto
 
 struct PresentationState {
     // 时间常量
@@ -394,9 +394,7 @@ enum PresentationEvent {
 | 未钉住的 expanded 时指针离开 ≥280ms | `collapsed` |
 | 点击刘海 | collapsed → `expanded(pinned:true)`；未钉住的 expanded（含 auto）→ `expanded(pinned:true)`；钉住的 expanded → `collapsed` |
 | 点击外部 | `collapsed` |
-| collapsed 时出现新 blocked 且设置开启 | `expanded(pinned:false, auto:true)` |
-| auto 展开后 8s 内没有指针进入或点击 | `collapsed` |
-| auto 展开期间指针进入或点击 | 去掉 auto 标记，按普通 expanded 处理 |
+| collapsed 时出现新 blocked | v1.3 起改为 peek，见 §6.3（原"自动展开 8s"已删除） |
 | 行被点击（跳转） | `collapsed` |
 
 ```swift
@@ -513,7 +511,7 @@ extension PresentationState {
 }
 ```
 
-视觉参数（不进单元测试）以 **Vibe Island App 真机录屏**为准（`ref/vibe-island/`，2026-10-20 用户手动录制，逐帧测量）。官网首页的网页演示用的是带过冲的 bezier，和真机不一致，不再参照：
+视觉参数（不进单元测试；v1.3 起完成反馈与 pop 已删除，见 §6.3）以 **Vibe Island App 真机录屏**为准（`ref/vibe-island/`，2026-10-20 用户手动录制，逐帧测量）。官网首页的网页演示用的是带过冲的 bezier，和真机不一致，不再参照：
 
 | 用途 | 参数 |
 |---|---|
@@ -524,8 +522,6 @@ extension PresentationState {
 | 居中 | 居中用的外层 frame 必须在尺寸动画的作用范围内，否则位置瞬间跳到终点而宽度仍在动画（收起时横向窜动约 22pt，录屏实测） |
 | 两耳 | 左耳贴形状左缘、右耳贴形状右缘，随形状尺寸动画向中间合拢或向外散开（2026-10-20 用户要求镜像对称；Vibe Island 真机是两耳整体贴左缘）；展开时 0.08s 淡出，收起时延迟 0.06s 后 0.15s 淡入（形状走完约 60% 时出现，与真机一致）；淡入淡出只作用于 opacity（`.animation(_:body:)`），不接管位置 |
 | 列表层 | 按形状**当前**宽度布局（Vibe Island 真机：标题随左缘、标签随右缘、卡片随宽度拉伸）；只做 opacity：入 0.15s、出 0.1s，从形状变化的第一帧开始；无 blur、无缩放；始终挂载 |
-| 完成反馈 | 右耳加宽到 140，显示 ✓ 加标题，2s 后恢复 |
-| pop | scale 1.04，`spring(response: 0.3, dampingFraction: 0.5)` |
 
 其余窗口要求：
 
@@ -588,8 +584,10 @@ enum AgentIcon {
 
 依据 2026-10-23 的 HTML 原型（`designs/perch-peek/`，不入库），用户选定**方案 B（窄卡片）**。动机：Blocked 时直接铺开完整列表太突兀；完成反馈只在收起态右耳显示，信息太少（而且 Clean 样式下被截成一个字母）。新增 `peek` 一层：只弹出需要注意的事，悬停再长成完整列表。本节取代第 6 节规则表里"新 blocked 自动展开"和第 6 节 `completion` / `pulse` 的旧描述。
 
+2026-10-23 精简（用户确认）：Peek 是唯一的提醒方式。删除"自动展开完整列表""刘海跳动""收起态右耳显示 ✓ 标题"三种旧行为及其设置；`Surface.expanded` 去掉 `auto`，`completion`、`pulse`、`autoCollapse` 一并删除。理由：✓ 标题是没有中间态时的权宜之计，右耳装不下标题、2s 太短、不能点击，Peek 已完整覆盖；另两种旧行为保留价值不大，多一个设置只增加理解成本。
+
 ```swift
-enum Surface: Equatable { case hidden, collapsed, peek, expanded(pinned: Bool, auto: Bool) }
+enum Surface: Equatable { case hidden, collapsed, peek, expanded(pinned: Bool) }
 
 /// 当前需要注意的事实，由 NotchModel 从 rows / sessions 算出（stale 的行不算）。
 struct Attention: Equatable {
@@ -600,32 +598,25 @@ struct Attention: Equatable {
 enum SystemAlert: Equatable { case unreachable, updateRequired }
 enum PeekItem: Hashable { case blocked(AgentRef), finished(AgentRef), system(SystemAlert) }
 
-enum BlockedAlert: String { case peek, expand, pulse }   // 设置 "When an agent is blocked"，默认 peek
-enum FinishedAlert: String { case peek, ear, off }       // 设置 "When an agent finishes"，默认 peek
-struct AlertSettings: Equatable { var blocked: BlockedAlert = .peek; var finished: FinishedAlert = .peek }
 
 enum PresentationEvent: Equatable {
     case rowsChanged(hasRows: Bool, attention: Attention)   // 取代 rowsChanged(hasRows:newBlocked:) 和 agentFinished(title:)
     case pointerEntered, pointerExited, clicked, clickedOutside, rowActivated, tick
-    case settingsChanged(AlertSettings)                      // 取代 settingsChanged(autoExpandOnBlocked:)
+    case settingsChanged(peekOnFinished: Bool)               // 取代 settingsChanged(autoExpandOnBlocked:)
 }
 
 struct PresentationState {
     static let hoverIntent: Duration = .milliseconds(120)
     static let hoverExitDelay: Duration = .milliseconds(280)
-    static let autoCollapse: Duration = .seconds(8)            // BlockedAlert.expand 的自动展开
     static let peekBlockedDuration: Duration = .seconds(8)
     static let peekSystemDuration: Duration = .seconds(6)
     static let peekFinishedDuration: Duration = .seconds(4)
-    static let completionDuration: Duration = .seconds(2)      // FinishedAlert.ear
     static let highlightDuration: Duration = .milliseconds(900)
-    init(alerts: AlertSettings = AlertSettings())
+    init(peekOnFinished: Bool = true)
     mutating func handle(_ event: PresentationEvent, now: ContinuousClock.Instant)
     private(set) var surface: Surface
     private(set) var peekItems: [PeekItem]      // 显示顺序；只在 surface == .peek 时非空
-    private(set) var completion: AgentRef?      // 收起态右耳的 "✓ 标题"（ear 模式）
     private(set) var highlight: AgentRef?       // 展开态里闪一下的行
-    private(set) var pulse: Int                 // 变化时视图播放一次 pop
     var nextTick: ContinuousClock.Instant? { get }
 }
 
@@ -653,36 +644,31 @@ extension NotchGeometry {
 
 | 场景 | 结果 |
 |---|---|
-| `rowsChanged(hasRows: false)` | `hidden`；清空 peekItems、completion、highlight，取消计时 |
+| `rowsChanged(hasRows: false)` | `hidden`；清空 peekItems、highlight，取消计时 |
 | 先剪枝：每次 `rowsChanged` | 原因已不成立的卡片移除（blocked 卡片的 ref 不在本次 blocked 里，finished、system 同理）；`peek` 时卡片全被移除 → `collapsed` |
-| collapsed / peek 时有新事件，对应模式是 peek（system 总是 peek） | 卡片加入 `peekItems`，surface → `peek`；peek 截止时间 = max(原截止时间, now + 该类时长)；已在列表里的同一卡片不重复加入 |
-| collapsed / peek 时有新 blocked，`blocked == .expand` | `expanded(pinned:false, auto:true)`，8s 后收起（同旧规则），清空 peekItems |
-| collapsed / peek 时有新 blocked，`blocked == .pulse` | `pulse += 1`，surface 不变 |
-| collapsed 时有新 finished，`finished == .ear` | `completion = ref`（同一次有多个时取 Attention 中的第一个），2s 后清除；期间再来新的则替换并重新计时。peek 时忽略 |
-| 新 finished，`finished == .off` | 不变 |
-| expanded 时有新 blocked 或新 finished（任何模式，`finished == .off` 除外） | 不弹 peek、不 pulse；`highlight` = 按显示顺序第一个新事件的 ref，0.9s 后清除。新 system 不处理（列表顶部已有提示卡片） |
-| 同一次 `rowsChanged` 里同时有 `.expand` 模式的新 blocked 和其他新事件 | 先处理 blocked（变为 expanded），其余按 expanded 规则处理 |
+| collapsed / peek 时有新 blocked、新 system，或者新 finished 且 `peekOnFinished` 为 true | 卡片加入 `peekItems`，surface → `peek`；peek 截止时间 = max(原截止时间, now + 该类时长)；已在列表里的同一卡片不重复加入 |
+| 新 finished，`peekOnFinished` 为 false | 不变 |
+| expanded 时有新 blocked 或新 finished（`peekOnFinished` 为 false 时不含 finished） | 不弹 peek；`highlight` = 按显示顺序第一个新事件的 ref，0.9s 后清除。新 system 不处理（列表顶部已有提示卡片） |
 | peek 到截止时间 | `collapsed`，清空 peekItems |
-| peek 时指针进入并停留 ≥120ms | `expanded(pinned:false, auto:false)`，清空 peekItems |
+| peek 时指针进入并停留 ≥120ms | `expanded(pinned:false)`，清空 peekItems |
 | peek 时指针离开 | 只取消待定的展开，peek 继续计时 |
-| peek 时点击形状（卡片以外） | `expanded(pinned:true, auto:false)`，清空 peekItems |
+| peek 时点击形状（卡片以外） | `expanded(pinned:true)`，清空 peekItems |
 | peek 时点击卡片（`rowActivated`） | `collapsed`，清空 peekItems |
 | peek 时点击外部 | 不变（像系统通知一样，到时间自己收起） |
 | `settingsChanged` | 只影响之后的事件，当前的 peek 保持 |
-| 离开 collapsed（进入 peek、expanded、hidden） | 清除 completion |
 
 **显示顺序**：blocked 卡片在前，然后 system，最后 finished；同类里后到的在前；同一次 `rowsChanged` 里同时到达的保持 `Attention` 中的顺序。
 
-**nextTick**：待定的展开 / 收起（含 auto 的 8s）、peek 截止、completion 截止、highlight 截止中最早的一个。
+**nextTick**：待定的展开 / 收起、peek 截止、highlight 截止中最早的一个。
 
-**设置**：`Preferences.autoExpandOnBlocked` 改为 `blockedAlert: BlockedAlert = .peek` 和 `finishedAlert: FinishedAlert = .peek`，键名 `blockedAlert`、`finishedAlert`（存 rawValue），缺失或无法识别时取默认值。迁移：没有 `blockedAlert` 键、但旧键 `autoExpandOnBlocked` 为 false → `.pulse`（旧键为 true 或缺失 → `.peek`）。`save` 不再写 `autoExpandOnBlocked`。
+**设置**：`Preferences.autoExpandOnBlocked` 改为 `peekOnFinished = true`（设置 "Peek when an agent finishes"），键名 `peekOnFinished`，缺失时取默认值。Blocked 和 system 总是 peek，没有设置。旧键 `autoExpandOnBlocked`（以及开发期间短暂存在的 `blockedAlert`、`finishedAlert`）不再读取，`save` 也不再写。
 
 视图要求（数值同原型方案 B）：
 
 - peek 层：顶部留出 bandHeight 的空白（摄像头区域），下面是卡片，复用 Grouped 列表的卡片（公羊 | 标题 / 状态 · 项目 · 时长 | 图标 | 悬停箭头），没有统计条和组标题；system 卡片沿用列表顶部的琥珀色提示卡片（`unreachable`：“Herdr isn’t reachable — reconnecting…”；`updateRequired`：“Herdr update required (0.9.5 or later)”）。超过 3 张时最后一行是 "+N more" 小字（11pt，白 38%）。
 - peek 层和列表层一样始终挂载、只做 opacity 渐变、按形状当前宽度布局；形状尺寸用 `peekSize`，底角半径 14，存在 Blocked 时有橙色光晕。peek → expanded 时形状从 440 宽长到 640 宽、同时变高。
 - peek 时面板接收形状内的鼠标事件（与 expanded 相同），点击卡片跳转。
-- ear 模式下右耳宽度改为 140（修复 Clean 样式下标题被截成一个字母的问题），标题由视图按 ref 从 rows 取（按 `cleanTitles` 清理），取不到时不显示。
+- 收起态右耳不再显示完成反馈，宽度只由收起样式决定。
 - highlight：对应的卡片描一圈白色内描边，0.9s 内淡出。
 
 ## 7. 异常处理一览

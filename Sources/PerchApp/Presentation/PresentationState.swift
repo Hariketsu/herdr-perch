@@ -4,7 +4,7 @@ enum Surface: Equatable {
     case hidden
     case collapsed
     case peek
-    case expanded(pinned: Bool, auto: Bool)
+    case expanded(pinned: Bool)
 }
 
 /// What currently deserves attention, computed by NotchModel from rows and sessions (stale rows excluded).
@@ -25,14 +25,6 @@ enum PeekItem: Hashable {
     case system(SystemAlert)
 }
 
-enum BlockedAlert: String { case peek, expand, pulse }
-enum FinishedAlert: String { case peek, ear, off }
-
-struct AlertSettings: Equatable {
-    var blocked: BlockedAlert = .peek
-    var finished: FinishedAlert = .peek
-}
-
 enum PresentationEvent: Equatable {
     case rowsChanged(hasRows: Bool, attention: Attention)
     case pointerEntered
@@ -41,7 +33,7 @@ enum PresentationEvent: Equatable {
     case clickedOutside
     case rowActivated
     case tick
-    case settingsChanged(AlertSettings)
+    case settingsChanged(peekOnFinished: Bool)
 }
 
 /// Pure reducer for the notch surface (architecture.md §6, §6.3). Time is passed in;
@@ -49,11 +41,9 @@ enum PresentationEvent: Equatable {
 struct PresentationState {
     static let hoverIntent: Duration = .milliseconds(120)
     static let hoverExitDelay: Duration = .milliseconds(280)
-    static let autoCollapse: Duration = .seconds(8)
     static let peekBlockedDuration: Duration = .seconds(8)
     static let peekSystemDuration: Duration = .seconds(6)
     static let peekFinishedDuration: Duration = .seconds(4)
-    static let completionDuration: Duration = .seconds(2)
     static let highlightDuration: Duration = .milliseconds(900)
 
     private enum Pending { case expand, collapse }
@@ -61,35 +51,30 @@ struct PresentationState {
     private(set) var surface: Surface = .hidden
     /// Cards in display order; non-empty only while peeking.
     private(set) var peekItems: [PeekItem] = []
-    /// "✓ title" in the collapsed ear (FinishedAlert.ear).
-    private(set) var completion: AgentRef?
     /// Row that flashes when something new arrives while the list is open.
     private(set) var highlight: AgentRef?
-    /// Bumped for BlockedAlert.pulse: drives the pop animation.
-    private(set) var pulse = 0
 
     var nextTick: ContinuousClock.Instant? {
-        [pendingDeadline, peekDeadline, completionDeadline, highlightDeadline].compactMap { $0 }.min()
+        [pendingDeadline, peekDeadline, highlightDeadline].compactMap { $0 }.min()
     }
 
-    private var alerts: AlertSettings
+    private var peekOnFinished: Bool
     private var seen: Attention?
     private var arrivals: [PeekItem: (batch: Int, index: Int)] = [:]
     private var batch = 0
     private var pending: Pending?
     private var pendingDeadline: ContinuousClock.Instant?
     private var peekDeadline: ContinuousClock.Instant?
-    private var completionDeadline: ContinuousClock.Instant?
     private var highlightDeadline: ContinuousClock.Instant?
 
-    init(alerts: AlertSettings = AlertSettings()) {
-        self.alerts = alerts
+    init(peekOnFinished: Bool = true) {
+        self.peekOnFinished = peekOnFinished
     }
 
     mutating func handle(_ event: PresentationEvent, now: ContinuousClock.Instant) {
         switch (event, surface) {
-        case let (.settingsChanged(settings), _):
-            alerts = settings
+        case let (.settingsChanged(enabled), _):
+            peekOnFinished = enabled
 
         case let (.rowsChanged(hasRows: false, attention), _):
             seen = attention
@@ -105,27 +90,26 @@ struct PresentationState {
 
         case (.pointerEntered, .collapsed), (.pointerEntered, .peek):
             schedule(.expand, at: now + Self.hoverIntent)
-        case let (.pointerEntered, .expanded(pinned, _)):
-            set(.expanded(pinned: pinned, auto: false))
+        case (.pointerEntered, .expanded):
+            cancel()
         case (.pointerExited, .collapsed), (.pointerExited, .peek):
             if pending == .expand { cancel() }
-        case (.pointerExited, .expanded(pinned: false, auto: false)):
+        case (.pointerExited, .expanded(pinned: false)):
             schedule(.collapse, at: now + Self.hoverExitDelay)
 
-        case (.clicked, .collapsed), (.clicked, .peek), (.clicked, .expanded(pinned: false, _)):
-            set(.expanded(pinned: true, auto: false))
-        case (.clicked, .expanded(pinned: true, _)), (.clickedOutside, .expanded),
+        case (.clicked, .collapsed), (.clicked, .peek), (.clicked, .expanded(pinned: false)):
+            set(.expanded(pinned: true))
+        case (.clicked, .expanded(pinned: true)), (.clickedOutside, .expanded),
              (.rowActivated, .expanded), (.rowActivated, .peek):
             set(.collapsed)
 
         case (.tick, _):
-            if let deadline = completionDeadline, now >= deadline { clearCompletion() }
             if let deadline = highlightDeadline, now >= deadline {
                 highlight = nil
                 highlightDeadline = nil
             }
             if let deadline = pendingDeadline, now >= deadline, let action = pending {
-                set(action == .expand ? .expanded(pinned: false, auto: false) : .collapsed)
+                set(action == .expand ? .expanded(pinned: false) : .collapsed)
             }
             if surface == .peek, let deadline = peekDeadline, now >= deadline { set(.collapsed) }
 
@@ -160,18 +144,15 @@ struct PresentationState {
     }
 
     private mutating func notify(_ items: [PeekItem], now: ContinuousClock.Instant) {
-        guard !items.isEmpty, surface != .hidden else { return }
-        var rest = items
-        if alerts.blocked == .expand, !isExpanded, items.contains(where: Self.isBlocked) {
-            set(.expanded(pinned: false, auto: true))
-            schedule(.collapse, at: now + Self.autoCollapse)
-            rest.removeAll(where: Self.isBlocked)  // they opened the list; only the others flash
+        let wanted = items.filter { item in
+            if case .finished = item { peekOnFinished } else { true }
         }
+        guard !wanted.isEmpty, surface != .hidden else { return }
         if isExpanded {
-            let flashing = rest.compactMap { item -> AgentRef? in
+            // The list already shows them: flash the first agent row instead of covering the list.
+            let flashing = wanted.compactMap { item -> AgentRef? in
                 switch item {
-                case let .blocked(ref): ref
-                case let .finished(ref): alerts.finished == .off ? nil : ref
+                case let .blocked(ref), let .finished(ref): ref
                 case .system: nil
                 }
             }
@@ -181,26 +162,7 @@ struct PresentationState {
             }
             return
         }
-        var peeked: [PeekItem] = []
-        var earSet = false
-        for item in rest {
-            switch item {
-            case .blocked:
-                if alerts.blocked == .peek { peeked.append(item) } else { pulse += 1 }
-            case .system:
-                peeked.append(item)
-            case let .finished(ref):
-                switch alerts.finished {
-                case .peek: peeked.append(item)
-                case .ear where surface == .collapsed && !earSet:  // the first of one update
-                    completion = ref
-                    completionDeadline = now + Self.completionDuration
-                    earSet = true
-                case .ear, .off: break
-                }
-            }
-        }
-        peeked.removeAll(where: peekItems.contains)
+        let peeked = wanted.filter { !peekItems.contains($0) }
         guard !peeked.isEmpty else { return }
         batch += 1
         for (index, item) in peeked.enumerated() {
@@ -218,15 +180,8 @@ struct PresentationState {
             if Self.rank(a) != Self.rank(b) { return Self.rank(a) < Self.rank(b) }
             return x.batch != y.batch ? x.batch > y.batch : x.index < y.index
         }
-        if surface != .peek {
-            // Entering peek keeps a pending hover expansion: the pointer may already be resting there.
-            surface = .peek
-            clearCompletion()
-        }
-    }
-
-    private static func isBlocked(_ item: PeekItem) -> Bool {
-        if case .blocked = item { true } else { false }
+        // Entering peek keeps a pending hover expansion: the pointer may already be resting there.
+        surface = .peek
     }
 
     private static func rank(_ item: PeekItem) -> Int {
@@ -241,11 +196,10 @@ struct PresentationState {
 
     // MARK: Surface
 
-    /// Any surface change cancels pending timers; leaving collapsed ends the ear; the cards go with the peek.
+    /// Any surface change cancels pending timers; the cards go with the peek.
     private mutating func set(_ next: Surface) {
         surface = next
         cancel()
-        if next != .collapsed { clearCompletion() }
         peekItems = []
         peekDeadline = nil
         arrivals = [:]
@@ -259,10 +213,5 @@ struct PresentationState {
     private mutating func cancel() {
         pending = nil
         pendingDeadline = nil
-    }
-
-    private mutating func clearCompletion() {
-        completion = nil
-        completionDeadline = nil
     }
 }

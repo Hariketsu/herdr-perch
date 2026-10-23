@@ -9,7 +9,6 @@ struct NotchRootView: View {
     @Bindable var model: NotchModel
 
     @State private var bottomRadius: CGFloat = 10
-    @State private var popping = false
 
     var body: some View {
         let expanded = model.isExpanded
@@ -53,7 +52,6 @@ struct NotchRootView: View {
             .accessibilityHidden(!peeking)
 
             CollapsedBand(summary: model.summary, style: model.preferences.compactStyle,
-                          completion: model.completionTitle,
                           centerWidth: model.geometry.centerWidth, wingWidth: model.wingWidth,
                           height: model.geometry.bandHeight)
                 // Each ear rides its own edge of the shape (left ear the left edge, right
@@ -67,17 +65,14 @@ struct NotchRootView: View {
         .contentShape(shape)
         .onTapGesture { if open { model.send(.clicked) } }   // collapsed clicks come from the monitor
         .environment(\.highlightedAgent, model.presentation.highlight)
-        .scaleEffect(popping && !expanded ? 1.04 : 1, anchor: .top)
         // The centring frame must sit inside the animations: otherwise the shape's
         // position jumps to its final x while its width animates, and the notch
         // lurches ~22pt sideways at the start of collapsing (measured on video).
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .animation(motion ? (open ? Palette.open : Palette.close) : nil, value: size)
-        .animation(Palette.pop, value: popping)
         .onChange(of: open, initial: true) { _, now in
             withAnimation(motion ? Palette.radius : nil) { bottomRadius = now ? 14 : 10 }
         }
-        .onChange(of: model.presentation.pulse) { pop() }
         .environment(\.colorScheme, .dark)
     }
 
@@ -85,11 +80,6 @@ struct NotchRootView: View {
     private func glow(open: Bool) -> Color {
         guard open else { return .clear }
         return model.summary.counts[.blocked] != nil ? Palette.alert.opacity(0.15) : .white.opacity(0.04)
-    }
-
-    private func pop() {
-        popping = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { popping = false }
     }
 }
 

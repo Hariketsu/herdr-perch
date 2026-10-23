@@ -15,25 +15,18 @@ enum DisplayPlacement: String {
 struct Preferences: Equatable {
     var compactStyle: CompactStyle = .birdCount
     var listStyle: ListStyle = .grouped
-    var blockedAlert: BlockedAlert = .peek
-    var finishedAlert: FinishedAlert = .peek
+    /// Blocked agents always peek (architecture.md §6.3); finished ones only when this is on.
+    var peekOnFinished = true
     var displayPlacement: DisplayPlacement = .builtInNotch
     var launchAtLogin = false
     var followReduceMotion = false
     var cleanTitles = true
 
-    var alerts: AlertSettings { AlertSettings(blocked: blockedAlert, finished: finishedAlert) }
-
     static func load(from defaults: UserDefaults) -> Preferences {
         var preferences = Preferences()
         if let style = defaults.string(forKey: "compactStyle").flatMap(CompactStyle.init) { preferences.compactStyle = style }
         if let style = defaults.string(forKey: "listStyle").flatMap(ListStyle.init) { preferences.listStyle = style }
-        if let alert = defaults.string(forKey: "blockedAlert").flatMap(BlockedAlert.init) {
-            preferences.blockedAlert = alert
-        } else if defaults.string(forKey: "blockedAlert") == nil, defaults.object(forKey: "autoExpandOnBlocked") as? Bool == false {
-            preferences.blockedAlert = .pulse  // before 0.2: "Expand when an agent is blocked" turned off
-        }
-        if let alert = defaults.string(forKey: "finishedAlert").flatMap(FinishedAlert.init) { preferences.finishedAlert = alert }
+        if let enabled = defaults.object(forKey: "peekOnFinished") as? Bool { preferences.peekOnFinished = enabled }
         if let placement = defaults.string(forKey: "displayPlacement").flatMap(DisplayPlacement.init) {
             preferences.displayPlacement = placement
         }
@@ -46,8 +39,7 @@ struct Preferences: Equatable {
     func save(to defaults: UserDefaults) {
         defaults.set(compactStyle.rawValue, forKey: "compactStyle")
         defaults.set(listStyle.rawValue, forKey: "listStyle")
-        defaults.set(blockedAlert.rawValue, forKey: "blockedAlert")
-        defaults.set(finishedAlert.rawValue, forKey: "finishedAlert")
+        defaults.set(peekOnFinished, forKey: "peekOnFinished")
         defaults.set(displayPlacement.rawValue, forKey: "displayPlacement")
         defaults.set(launchAtLogin, forKey: "launchAtLogin")
         defaults.set(followReduceMotion, forKey: "followReduceMotion")

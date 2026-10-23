@@ -65,11 +65,10 @@ Open Settings from the gear in the expanded notch, or from the ram in the menu b
 | Setting | Options |
 |---|---|
 | Notch style | Clean (count) · Dots (one per agent) · Counts (per state) |
-| Rows | Grouped · Detailed · Compact |
 | Peek when an agent finishes | On · Off |
 | Display | Built-in Notch Display · Main Display |
 | Clean agent titles | On · Off |
-| Follow system "Reduce motion" | Off · On |
+| Reduce motion when the system asks to | Off · On |
 | Launch at login | Off · On |
 
 ## Build from source

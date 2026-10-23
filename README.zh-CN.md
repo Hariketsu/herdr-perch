@@ -65,11 +65,10 @@ oh-my-pi 等工具生成的 Agent 标题会带有提示符和 Nerd Font 图标�
 | 设置项 | 选项 |
 |---|---|
 | 收起样式（Notch style） | Clean（数量）· Dots（每个 Agent 一个点）· Counts（按状态计数） |
-| 列表样式（Rows） | Grouped · Detailed · Compact |
 | 完成时弹出 Peek（Peek when an agent finishes） | 开 · 关 |
 | 显示器（Display） | 内建刘海屏 · 主显示器 |
 | 清理 Agent 标题（Clean agent titles） | 开 · 关 |
-| 跟随系统"减少动态效果"（Follow system "Reduce motion"） | 关 · 开 |
+| 系统要求时减少动态效果（Reduce motion when the system asks to） | 关 · 开 |
 | 登录时启动（Launch at login） | 关 · 开 |
 
 ## 从源码构建

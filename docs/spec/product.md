@@ -98,6 +98,8 @@ Perch 展示 4 种状态，全部由 Herdr 的 `agent_status` 直接映射：
 
 ## 8. 设置
 
+2026-10-23 调整：设置窗口改为单页分组表单（无侧边栏、无下拉菜单，选项用分段控件），删除列表样式设置；About 为独立窗口。
+
 2026-10-20 调整：原型中的形态选项**作为用户设置提供**，不再由我们替用户选定（成熟产品让用户选形态）。
 
 菜单栏放一个鸟形模板图标，菜单项：Show/Hide Perch、Settings…、About（含 NotchAgent 致谢）、Quit。
@@ -107,10 +109,9 @@ Perch 展示 4 种状态，全部由 Herdr 的 `agent_status` 直接映射：
 | 分组 | 设置项 | 选项 | 默认 |
 |---|---|---|---|
 | 外观 | 收起态样式 | A 小鸟 + 数量 / B 每个 Agent 一个点 / C 按状态计数 | A（贴近 Vibe Island 的 Clean） |
-| 外观 | 列表样式 | 按状态分组（Grouped）/ 大行 + 普通行（Detailed）/ 全部普通行（Compact） | 按状态分组（2026-10-22 起，见 architecture.md §6.2） |
 | 行为 | 完成时弹出 Peek（Peek when an agent finishes） | 开 / 关 | 开（2026-10-23 起；Blocked 总是弹出 Peek，没有开关） |
 | 行为 | 显示器 | 内建刘海屏 / 主显示器 | 内建刘海屏 |
-| 外观 | 跟随系统"减少动态效果" | 开 / 关 | 关（始终播放完整动画） |
+| 外观 | 系统要求时减少动态效果（Reduce motion when the system asks to） | 开 / 关 | 关（始终播放完整动画） |
 | 外观 | 清理标题前缀（Clean agent titles） | 开 / 关 | 开 |
 | 通用 | 登录时启动 | 开 / 关 | 关 |
 

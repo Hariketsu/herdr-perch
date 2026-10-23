@@ -8,14 +8,17 @@ final class MenuBarController: NSObject, NSMenuDelegate {
     private let store: PerchStore
     private let onToggle: (Bool) -> Void
     private let onSettings: () -> Void
+    private let onAbout: () -> Void
     private var visible = true
     private let toggleItem = NSMenuItem(title: "Hide Perch", action: #selector(toggle), keyEquivalent: "")
     private let statusItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
 
-    init(store: PerchStore, onToggle: @escaping (Bool) -> Void, onSettings: @escaping () -> Void) {
+    init(store: PerchStore, onToggle: @escaping (Bool) -> Void, onSettings: @escaping () -> Void,
+         onAbout: @escaping () -> Void) {
         self.store = store
         self.onToggle = onToggle
         self.onSettings = onSettings
+        self.onAbout = onAbout
         super.init()
         item.button?.image = Self.ramImage()
         let menu = NSMenu()
@@ -46,19 +49,7 @@ final class MenuBarController: NSObject, NSMenuDelegate {
 
     @objc private func settings() { onSettings() }
 
-    @objc private func about() {
-        let credits = NSAttributedString(
-            string: """
-            A quiet companion for Herdr.
-
-            Acknowledgements: portions derived from NotchAgent \
-            (github.com/ykushch/notchagent) by Yuri Kushch, Apache License 2.0.
-            Herdr Perch is licensed under the GNU GPL v3.
-            """,
-            attributes: [.font: NSFont.systemFont(ofSize: 11)])
-        NSApp.activate()
-        NSApp.orderFrontStandardAboutPanel(options: [.credits: credits])
-    }
+    @objc private func about() { onAbout() }
 
     /// The same pixel ram as the notch (prompt face) at 0.8 scale, as a 16pt template image.
     private static func ramImage() -> NSImage {

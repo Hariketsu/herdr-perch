@@ -25,7 +25,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         model.showSettings = { [weak self] in self?.settings.show() }
         menuBar = MenuBarController(store: store, onToggle: { [weak self] visible in
             visible ? self?.window.show() : self?.window.tearDown()
-        }, onSettings: { [weak self] in self?.settings.show() })
+        }, onSettings: { [weak self] in self?.settings.show() },
+           onAbout: { [weak self] in self?.settings.showAbout() })
 
         observeRows()
         store.start()

@@ -1,8 +1,9 @@
 name: Release
 
 # Pushing a tag such as v0.3.0 builds the DMG and publishes a GitHub Release.
-# The release title is the tag message's first line and its notes are the rest of the message,
-# followed by the install instructions. Run it by hand to release a tag that already exists.
+# The release title is the tag message's first line and its notes are the rest of the message
+# (a list of changes; git strips lines starting with "#", so write no headings), under
+# "What's new" and followed by the install instructions. Run it by hand to release a tag that already exists.
 on:
   push:
     tags: ['v*']
@@ -46,6 +47,8 @@ jobs:
           git fetch --force origin "refs/tags/$TAG:refs/tags/$TAG"
           git tag -l --format='%(contents:subject)' "$TAG" > title.txt
           {
+            echo "### What's new"
+            echo
             git tag -l --format='%(contents:body)' "$TAG"
             echo
             echo "### Install"

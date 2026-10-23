@@ -20,22 +20,20 @@
 </p>
 
 <p align="center">
-  <img src="docs/assets/hover.gif" width="660" alt="Hovering the notch opens the list of agents, grouped by state">
+  <img src="docs/assets/overview.gif" width="660" alt="An agent gets blocked and peeks out of the notch; hovering opens the full list, one agent in each state">
 </p>
 
 ## What it does
 
 - **Every agent at a glance.** A pixel ram in the notch takes the colour of your most urgent agent; hover to see them all, grouped into *Needs you*, *Done*, *Working* and a folded *Idle*.
-- **Speaks up when it matters.** When an agent asks for approval or input, finishes, or Herdr goes away, the notch peeks out with just that card; hover to see everything. You can switch this to opening the full list or a simple bounce.
+- **Speaks up when it matters.** When an agent asks for approval or input, finishes, or Herdr goes away, the notch peeks out with just that card; hover to see everything. Peeks for finished agents can be turned off in Settings.
 - **One click back.** Click a row to focus that agent's pane in Herdr and bring your terminal to the front.
 - **Zero setup.** Perch finds every local Herdr session by itself and follows them as they start, stop and reconnect.
 - **Stays out of the way.** No Dock icon, no extra processes; it idles at well under 1% CPU.
 
 <p align="center">
-  <img src="docs/assets/hero.png" width="660" alt="The open notch with one agent in each state: Needs you, Done, Working and Idle">
+  <img src="docs/assets/peek.gif" width="520" alt="Peek: a finished and a blocked agent stack up as cards, then leave once handled">
 </p>
-
-<!-- TODO: screenshots — collapsed styles (Clean / Dots / Counts), settings -->
 
 ## Requirements
 

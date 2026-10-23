@@ -62,7 +62,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         center.addObserver(forName: .init("dev.herdr.perch.test.collapse"), object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated {
-                guard let model = self?.model, model.isExpanded else { return }
+                guard let model = self?.model, model.isOpen else { return }
                 model.send(.rowActivated)
             }
         }

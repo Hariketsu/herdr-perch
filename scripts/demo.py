@@ -4,7 +4,7 @@
 # ///
 """Record README demo clips from a disposable Herdr session with fictional agents.
 
-    scripts/demo.py [--dry-run] [hero hover blocked jump done groups]
+    scripts/demo.py [--dry-run] [overview peek]
 
 Quits the running Perch, starts a headless `herdr --session perch-demo` with four fake
 agents (states set through `pane.report_agent`), launches dist/Herdr Perch.app with
@@ -148,7 +148,7 @@ class Demo:
         self.perch_pid = int(wait_until(lambda: self.driver("pid", EXECUTABLE)))
         time.sleep(1.5)
         # Unfold the Idle group once (it stays open for this run) so every state shows a full row.
-        # The header sits below one card per other state in the hero layout; offset measured from hero.png.
+        # The header sits below one card per other state in the hero layout; offset measured on a screenshot of that layout.
         self.arrange(HERO)
         self.driver("post", "expand")
         time.sleep(1.0)
@@ -187,7 +187,7 @@ class Demo:
         for name, state in states.items():
             if self.agent(name).get("agent_status") != state:
                 self.set(name, state)
-        time.sleep(3.5)  # Let auto-expand and completion feedback play out.
+        time.sleep(1.5)  # Let any peek appear before closing it.
         self.driver("post", "collapse")
         time.sleep(1.0)
 
@@ -200,41 +200,36 @@ class Demo:
     def glide(self, point: tuple[float, float], seconds: float) -> None:
         self.driver("glide", point[0], point[1], seconds)
 
-    def below(self) -> tuple[float, float]:
-        x, y = self.driver.point("center")
-        return x + 150, y + CROP_HEIGHT - 20
-
     # Recording
 
-    def crop(self) -> tuple[int, int, int, int]:
+    def crop(self, size: tuple[int, int]) -> tuple[int, int, int, int]:
         """Crop rectangle in pixels (2x) of the built-in display, centered on the notch."""
+        width, height = size
         cx, _ = self.driver.point("center")
-        left = cx - BUILT_IN_LEFT - CROP_WIDTH / 2
-        return int(left * 2), 0, CROP_WIDTH * 2, CROP_HEIGHT * 2
+        left = cx - BUILT_IN_LEFT - width / 2
+        return int(left * 2), 0, width * 2, height * 2
 
-    def clip(self, name: str, seconds: float, action) -> None:
+    def clip(self, name: str, seconds: float, timeline, size=(CROP_WIDTH, CROP_HEIGHT)) -> None:
+        """Runs `timeline` ([(seconds, step)]) while recording, then holds until `seconds`."""
         print(f"• {name}")
+
+        def action():
+            started = time.monotonic()
+            for at, step in timeline:
+                time.sleep(max(0, at - (time.monotonic() - started)))
+                step()
+            time.sleep(max(0, seconds - (time.monotonic() - started)))
+
         if not self.record:
             action()
-            time.sleep(0.5)
             return
         raw = WORK / f"{name}.mov"
         recorder = subprocess.Popen(["screencapture", "-v", "-C", f"-D{BUILT_IN_DISPLAY}",
-                                     f"-V{seconds + LEAD}", str(raw)])
+                                     f"-V{seconds + LEAD + 1}", str(raw)])  # +1: it starts a little late
         time.sleep(LEAD)
         action()
         recorder.wait()
-        to_gif(raw, OUT / f"{name}.gif", self.crop(), start=LEAD - 0.3, duration=seconds)
-
-    def screenshot(self, name: str) -> None:
-        print(f"• {name}")
-        raw = WORK / f"{name}-full.png"
-        subprocess.run(["screencapture", "-x", f"-D{BUILT_IN_DISPLAY}", str(raw)], check=True)
-        x, y, w, h = self.crop()
-        target = OUT / f"{name}.png" if self.record else WORK / f"{name}.png"
-        subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(raw), "-vf", f"crop={w}:{h}:{x}:{y}",
-                        str(target)], check=True)
-        print(f"  {target}")
+        to_gif(raw, OUT / f"{name}.gif", self.crop(size), start=LEAD - 0.3, duration=seconds)
 
     def teardown(self) -> None:
         if self.perch_pid:
@@ -262,88 +257,36 @@ def to_gif(source: Path, target: Path, crop: tuple[int, int, int, int], *, start
 
 # Clips. Each starts and ends collapsed with the pointer off camera, so it loops cleanly.
 
-def hero(demo: Demo) -> None:
-    demo.arrange(HERO)
-    demo.driver("post", "expand")
-    time.sleep(1.2)
-    demo.screenshot("hero")
-    demo.driver("post", "collapse")
-    time.sleep(1.0)
-
-
-def hover(demo: Demo) -> None:
-    demo.arrange(HERO)
+def overview(demo: Demo) -> None:
+    """Agents at work; Codex gets blocked and peeks; the pointer opens the full list, one agent per state."""
+    demo.arrange({"codex": "working", "omp": "working", "claude": "done", "pi": "idle"})
     center = demo.driver.point("center")
-
-    def action():
-        demo.glide(demo.below(), 0.2)
-        time.sleep(0.6)
-        demo.glide(center, 0.7)
-        time.sleep(2.2)
-        demo.glide(demo.below(), 0.6)
-        time.sleep(1.0)
-    demo.clip("hover", 5.5, action)
-    demo.park()
+    # Leaves sideways along the top strip, so it never crosses (and highlights) a card.
+    off_camera = (center[0] + CROP_WIDTH / 2 + 40, center[1])
+    demo.clip("overview", 7.2, [
+        (0.8, lambda: demo.set("codex", "blocked")),
+        (2.3, lambda: demo.glide(center, 0.6)),   # rests on the top strip, off the cards
+        (5.5, lambda: demo.glide(off_camera, 0.5)),
+    ])
 
 
-def blocked(demo: Demo) -> None:
-    demo.arrange({**HERO, "codex": "working"})
+def peek(demo: Demo) -> None:
+    """Two cards stack (blocked above done) and leave together once handled."""
+    demo.arrange({"codex": "working", "claude": "working", "omp": "working", "pi": "idle"})
 
-    def action():
-        time.sleep(0.8)
-        demo.set("codex", "blocked")
-        time.sleep(2.6)
-        demo.driver("post", "collapse")
-        time.sleep(1.0)
-    demo.clip("blocked", 4.8, action)
+    def handled():
+        demo.set("codex", "working")
+        # Looking at Claude's tab turns Done into Idle.
+        rpc("tab.focus", {"tab_id": demo.tabs["claude"]})
 
-
-def jump(demo: Demo) -> None:
-    demo.arrange(HERO)
-    center = demo.driver.point("center")
-
-    def action():
-        demo.glide(demo.below(), 0.2)
-        time.sleep(0.5)
-        demo.glide(center, 0.6)
-        time.sleep(0.8)
-        demo.glide(demo.driver.point("row", demo.perch_pid, 0), 0.5)
-        time.sleep(0.5)
-        demo.driver("click")
-        time.sleep(0.9)
-        demo.glide(demo.below(), 0.5)
-        time.sleep(0.6)
-    demo.clip("jump", 5.2, action)
-    demo.park()
+    demo.clip("peek", 5.0, [
+        (0.8, lambda: demo.set("claude", "done")),
+        (2.0, lambda: demo.set("codex", "blocked")),
+        (3.8, handled),
+    ], size=(520, 190))
 
 
-def done(demo: Demo) -> None:
-    demo.arrange({**HERO, "claude": "working"})
-
-    def action():
-        time.sleep(0.8)
-        demo.set("claude", "done")
-        time.sleep(3.2)
-    demo.clip("done", 4.0, action)
-
-
-def groups(demo: Demo) -> None:
-    demo.arrange(HERO)
-
-    def action():
-        demo.driver("post", "expand")
-        time.sleep(1.0)
-        # Through three changes and back again, so the loop ends where it started.
-        for name, state in [("pi", "working"), ("omp", "blocked"), ("codex", "working"),
-                            ("codex", "blocked"), ("omp", "working"), ("pi", "idle")]:
-            demo.set(name, state)
-            time.sleep(1.1)
-        demo.driver("post", "collapse")
-        time.sleep(0.9)
-    demo.clip("groups", 8.5, action)
-
-
-CLIPS = {"hero": hero, "hover": hover, "blocked": blocked, "jump": jump, "done": done, "groups": groups}
+CLIPS = {"overview": overview, "peek": peek}
 
 
 def main() -> None:

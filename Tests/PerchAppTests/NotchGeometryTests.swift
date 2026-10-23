@@ -173,3 +173,31 @@ extension NotchGeometryTests {
         }
     }
 }
+
+extension NotchGeometryTests {
+    @Test func peekWidthUses440AndCapsAtScreenWidthWithoutNarrowingCollapsed() {
+        let geometry = NotchGeometry(metrics: notchedMetrics())
+        #expect(NotchGeometry.peekWidth == 440)
+        #expect(geometry.peekSize(contentHeight: 100, wingWidth: 40).width == 440)
+        let narrow = NotchGeometry(metrics: NotchScreenMetrics(frame: CGRect(x: 0, y: 0, width: 350, height: 600), safeAreaTop: 0))
+        #expect(narrow.peekSize(contentHeight: 100, wingWidth: 40).width == 326)
+        #expect(narrow.peekSize(contentHeight: 100, wingWidth: NotchGeometry.maxWingWidth).width == 470)
+    }
+
+    @Test func peekHeightIncludesBandAndCapsAtMaximumOrScreenFraction() {
+        let geometry = NotchGeometry(metrics: notchedMetrics())
+        #expect(geometry.peekSize(contentHeight: 0, wingWidth: 40).height == 32)
+        #expect(geometry.peekSize(contentHeight: 100, wingWidth: 40).height == 132)
+        #expect(geometry.peekSize(contentHeight: 1000, wingWidth: 40).height == 560)
+        let short = NotchGeometry(metrics: NotchScreenMetrics(frame: CGRect(x: 0, y: 0, width: 1000, height: 500), safeAreaTop: 0))
+        #expect(short.peekSize(contentHeight: 1000, wingWidth: 40).height == 360)
+    }
+
+    @Test(arguments: [(70.8, 102.0), (71.0, 104.0), (71.2, 104.0)])
+    func peekHeightRoundsToNearestEvenValueLikeExpanded(_ content: Double, _ expected: Double) {
+        let geometry = NotchGeometry(metrics: notchedMetrics())
+        let height = geometry.peekSize(contentHeight: CGFloat(content), wingWidth: 40).height
+        #expect(height == CGFloat(expected))
+        #expect(height == geometry.expandedSize(contentHeight: CGFloat(content), wingWidth: 40).height)
+    }
+}

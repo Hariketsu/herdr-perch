@@ -1,21 +1,22 @@
 import Testing
+import PerchCore
 @testable import PerchApp
 
 @Suite struct PresentationStateTests {
     private func collapsed(at time: ContinuousClock.Instant) -> PresentationState {
-        var state = PresentationState()
-        state.handle(.rowsChanged(hasRows: true, newBlocked: false), now: time)
+        var state = PresentationState(alerts: AlertSettings(blocked: .expand))
+        state.handle(.rowsChanged(hasRows: true, attention: Attention()), now: time)
         return state
     }
 
     @Test func initialHiddenAndFirstRowsCollapsed() {
         let t0 = ContinuousClock.now
-        var state = PresentationState()
+        var state = PresentationState(alerts: AlertSettings(blocked: .expand))
         #expect(state.surface == .hidden)
         #expect(state.nextTick == nil)
-        state.handle(.rowsChanged(hasRows: false, newBlocked: false), now: t0)
+        state.handle(.rowsChanged(hasRows: false, attention: Attention()), now: t0)
         #expect(state.surface == .hidden)
-        state.handle(.rowsChanged(hasRows: true, newBlocked: false), now: t0)
+        state.handle(.rowsChanged(hasRows: true, attention: Attention()), now: t0)
         #expect(state.surface == .collapsed)
         #expect(state.nextTick == nil)
     }
@@ -106,7 +107,7 @@ import Testing
     @Test func newBlockedAutomaticallyExpandsAndCollapsesAtEightSeconds() throws {
         let t0 = ContinuousClock.now
         var state = collapsed(at: t0)
-        state.handle(.rowsChanged(hasRows: true, newBlocked: true), now: t0)
+        state.handle(.rowsChanged(hasRows: true, attention: Attention(blocked: [AgentRef(session: "test", paneID: "p1")])), now: t0)
         #expect(state.surface == .expanded(pinned: false, auto: true))
         let deadline = try #require(state.nextTick)
         #expect(deadline == t0 + .seconds(8))
@@ -121,7 +122,7 @@ import Testing
     @Test func pointerEntryTakesOverAutomaticExpansion() {
         let t0 = ContinuousClock.now
         var state = collapsed(at: t0)
-        state.handle(.rowsChanged(hasRows: true, newBlocked: true), now: t0)
+        state.handle(.rowsChanged(hasRows: true, attention: Attention(blocked: [AgentRef(session: "test", paneID: "p1")])), now: t0)
         state.handle(.pointerEntered, now: t0 + .seconds(1))
         #expect(state.surface == .expanded(pinned: false, auto: false))
         #expect(state.nextTick == nil)
@@ -134,7 +135,7 @@ import Testing
         let t0 = ContinuousClock.now
         var state = collapsed(at: t0)
         if automatic {
-            state.handle(.rowsChanged(hasRows: true, newBlocked: true), now: t0)
+            state.handle(.rowsChanged(hasRows: true, attention: Attention(blocked: [AgentRef(session: "test", paneID: "p1")])), now: t0)
         } else {
             state.handle(.pointerEntered, now: t0)
             state.handle(.tick, now: t0 + .milliseconds(120))
@@ -155,20 +156,25 @@ import Testing
         #expect(state.nextTick == nil)
     }
 
-    @Test func disabledAutomaticExpansionAndSettingChanges() {
+    @Test func settingChangesApplyToSubsequentNewBlockedRefs() {
         let t0 = ContinuousClock.now
-        var state = PresentationState(autoExpandOnBlocked: false)
-        state.handle(.rowsChanged(hasRows: true, newBlocked: false), now: t0)
-        state.handle(.rowsChanged(hasRows: true, newBlocked: true), now: t0)
+        let first = AgentRef(session: "test", paneID: "p1")
+        let second = AgentRef(session: "test", paneID: "p2")
+        var state = PresentationState(alerts: AlertSettings(blocked: .pulse))
+        state.handle(.rowsChanged(hasRows: true, attention: Attention(blocked: [first])), now: t0)
         #expect(state.surface == .collapsed)
-        #expect(state.nextTick == nil)
-        state.handle(.settingsChanged(autoExpandOnBlocked: true), now: t0)
-        state.handle(.rowsChanged(hasRows: true, newBlocked: true), now: t0)
+        #expect(state.pulse == 1)
+        state.handle(.settingsChanged(AlertSettings(blocked: .expand)), now: t0)
+        state.handle(.rowsChanged(hasRows: true, attention: Attention(blocked: [first])), now: t0)
+        #expect(state.surface == .collapsed)
+        state.handle(.rowsChanged(hasRows: true, attention: Attention(blocked: [first, second])), now: t0)
         #expect(state.surface == .expanded(pinned: false, auto: true))
         state.handle(.clickedOutside, now: t0)
-        state.handle(.settingsChanged(autoExpandOnBlocked: false), now: t0)
-        state.handle(.rowsChanged(hasRows: true, newBlocked: true), now: t0)
+        state.handle(.settingsChanged(AlertSettings(blocked: .pulse)), now: t0)
+        state.handle(.rowsChanged(hasRows: true, attention: Attention()), now: t0)
+        state.handle(.rowsChanged(hasRows: true, attention: Attention(blocked: [first])), now: t0)
         #expect(state.surface == .collapsed)
+        #expect(state.pulse == 2)
         #expect(state.nextTick == nil)
     }
 
@@ -178,11 +184,11 @@ import Testing
             var state = collapsed(at: t0)
             switch mode {
             case 1: state.handle(.clicked, now: t0)
-            case 2: state.handle(.rowsChanged(hasRows: true, newBlocked: true), now: t0)
+            case 2: state.handle(.rowsChanged(hasRows: true, attention: Attention(blocked: [AgentRef(session: "test", paneID: "p1")])), now: t0)
             case 3: state.handle(.pointerEntered, now: t0)
             default: break
             }
-            state.handle(.rowsChanged(hasRows: false, newBlocked: false), now: t0 + .milliseconds(1))
+            state.handle(.rowsChanged(hasRows: false, attention: Attention()), now: t0 + .milliseconds(1))
             #expect(state.surface == .hidden)
             #expect(state.nextTick == nil)
             state.handle(.tick, now: t0 + .seconds(10))
@@ -195,18 +201,18 @@ import Testing
 extension PresentationStateTests {
     @Test func blockedPulseAccumulatesWhenAutomaticExpansionIsDisabled() {
         let t0 = ContinuousClock.now
-        var state = PresentationState(autoExpandOnBlocked: false)
-        state.handle(.rowsChanged(hasRows: true, newBlocked: false), now: t0)
+        var state = PresentationState(alerts: AlertSettings(blocked: .pulse))
+        state.handle(.rowsChanged(hasRows: true, attention: Attention()), now: t0)
         let initial = state.pulse
         for increment in 1...3 {
-            state.handle(.rowsChanged(hasRows: true, newBlocked: true), now: t0 + .seconds(increment))
+            state.handle(.rowsChanged(hasRows: true, attention: Attention(blocked: [AgentRef(session: "test", paneID: "new-\(increment)")])), now: t0 + .seconds(increment))
             #expect(state.surface == .collapsed)
             #expect(state.pulse == initial + increment)
         }
     }
 
     @Test(arguments: ["pinned", "hover", "auto"])
-    func newBlockedPulsesWhenAlreadyExpanded(_ mode: String) {
+    func newBlockedHighlightsWhenAlreadyExpanded(_ mode: String) {
         let t0 = ContinuousClock.now
         var state = collapsed(at: t0)
         switch mode {
@@ -214,13 +220,14 @@ extension PresentationStateTests {
         case "hover":
             state.handle(.pointerEntered, now: t0)
             state.handle(.tick, now: t0 + .milliseconds(120))
-        default: state.handle(.rowsChanged(hasRows: true, newBlocked: true), now: t0)
+        default: state.handle(.rowsChanged(hasRows: true, attention: Attention(blocked: [AgentRef(session: "test", paneID: "p1")])), now: t0)
         }
         let initial = state.pulse
         let surface = state.surface
         for increment in 1...3 {
-            state.handle(.rowsChanged(hasRows: true, newBlocked: true), now: t0 + .seconds(increment))
-            #expect(state.pulse == initial + increment)
+            state.handle(.rowsChanged(hasRows: true, attention: Attention(blocked: [AgentRef(session: "test", paneID: "new-\(increment)")])), now: t0 + .seconds(increment))
+            #expect(state.pulse == initial)
+            #expect(state.highlight == AgentRef(session: "test", paneID: "new-\(increment)"))
             #expect(state.surface == surface)
         }
     }
@@ -229,28 +236,28 @@ extension PresentationStateTests {
         let t0 = ContinuousClock.now
         var state = collapsed(at: t0)
         let initial = state.pulse
-        state.handle(.rowsChanged(hasRows: true, newBlocked: true), now: t0)
+        state.handle(.rowsChanged(hasRows: true, attention: Attention(blocked: [AgentRef(session: "test", paneID: "p1")])), now: t0)
         #expect(state.surface == .expanded(pinned: false, auto: true))
         #expect(state.pulse == initial)
     }
 
     @Test func hiddenWithoutRowsNeverPulsesEvenForNewBlocked() {
         let t0 = ContinuousClock.now
-        var state = PresentationState(autoExpandOnBlocked: false)
+        var state = PresentationState(alerts: AlertSettings(blocked: .pulse))
         let initial = state.pulse
-        state.handle(.rowsChanged(hasRows: false, newBlocked: true), now: t0)
+        state.handle(.rowsChanged(hasRows: false, attention: Attention(blocked: [AgentRef(session: "test", paneID: "p1")])), now: t0)
         #expect(state.surface == .hidden)
         #expect(state.pulse == initial)
     }
 
     @Test func updatesWithoutNewBlockedDoNotPulse() {
         let t0 = ContinuousClock.now
-        var state = PresentationState(autoExpandOnBlocked: false)
+        var state = PresentationState(alerts: AlertSettings(blocked: .pulse))
         let initial = state.pulse
-        state.handle(.rowsChanged(hasRows: true, newBlocked: false), now: t0)
+        state.handle(.rowsChanged(hasRows: true, attention: Attention()), now: t0)
         #expect(state.pulse == initial)
         state.handle(.clicked, now: t0)
-        state.handle(.rowsChanged(hasRows: true, newBlocked: false), now: t0 + .seconds(1))
+        state.handle(.rowsChanged(hasRows: true, attention: Attention()), now: t0 + .seconds(1))
         #expect(state.pulse == initial)
     }
 }

@@ -1,0 +1,22 @@
+name: Feature request
+description: Suggest an idea for Herdr Perch.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: Please search existing issues first. Perch only reads from Herdr, so ideas that need hooks into agents are out of scope.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the situation where Perch falls short today.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like to happen?
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you've considered

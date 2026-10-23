@@ -1,0 +1,60 @@
+name: Bug report
+description: Something in Herdr Perch doesn't work as expected.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Please search existing issues first.
+        Screenshots and recordings help, but hide agent titles and project names you don't want to share.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Start an agent in Herdr
+        2. …
+  - type: input
+    id: perch-version
+    attributes:
+      label: Herdr Perch version
+      description: Shown in the About window.
+      placeholder: "0.2.0"
+    validations:
+      required: true
+  - type: input
+    id: macos-version
+    attributes:
+      label: macOS version
+      placeholder: "15.7"
+    validations:
+      required: true
+  - type: input
+    id: herdr-version
+    attributes:
+      label: Herdr version
+      description: Output of `herdr --version`.
+      placeholder: "herdr 0.9.5"
+    validations:
+      required: true
+  - type: dropdown
+    id: display
+    attributes:
+      label: Where is Perch shown?
+      options:
+        - Built-in display with a notch
+        - A display without a notch (Main Display)
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Screenshots, recordings, or output of `perchctl dump` (check it for titles you don't want to share).

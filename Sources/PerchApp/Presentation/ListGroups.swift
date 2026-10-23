@@ -1,6 +1,6 @@
 import PerchCore
 
-/// Sections of the grouped list (architecture.md §6.2). Pure logic.
+/// Sections of the grouped list. Pure logic.
 enum ListGroups {
     /// Non-empty groups, blocked → finished → working → idle; rows keep their order.
     static func make(_ rows: [AgentRow]) -> [(status: DisplayStatus, rows: [AgentRow])] {

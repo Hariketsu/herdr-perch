@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// Monochrome agent marks (architecture.md §6.2). The SVGs are embedded as strings:
+/// Monochrome agent marks. The SVGs are embedded as strings:
 /// the hand-assembled .app has no SwiftPM resource bundle for `Bundle.module` to find.
 /// Sources: lobe-icons (MIT) claudecode / codex / opencode / pi; the omp.sh header π mark
 /// (oh-my-pi, MIT). See NOTICE. Arc flags are written out ("0 0 1 3.046", not "013.046"):

@@ -1,7 +1,7 @@
 import PerchCore
 import SwiftUI
 
-/// Tokens from vibeisland.app, as fixed in docs/prototype.
+/// Tokens from vibeisland.app.
 enum Palette {
     static let alert = Color(hex: 0xF97316), alertBright = Color(hex: 0xFB923C)
     static let work = Color(hex: 0x3B82F6), workBright = Color(hex: 0x60A5FA)

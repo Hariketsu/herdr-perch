@@ -1,7 +1,7 @@
 import Foundation
 
 /// Strips the prompt prefix and icons agents write into terminal titles, e.g. OMP's
-/// "π > 󰈙 DOCS: …" (architecture.md §4.4). Only the start of the title is touched.
+/// "π > 󰈙 DOCS: …". Only the start of the title is touched.
 public enum TitleCleaner {
     public static func clean(_ title: String) -> String {
         var rest = Substring(title).drop(while: \.isWhitespace)

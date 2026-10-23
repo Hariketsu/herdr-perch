@@ -1,4 +1,4 @@
-/// Peek shows at most three cards; the rest fold into "+N more" (architecture.md §6.3).
+/// Peek shows at most three cards; the rest fold into "+N more" (ARCHITECTURE.md, Presentation).
 enum PeekLayout {
     static let maxCards = 3
 

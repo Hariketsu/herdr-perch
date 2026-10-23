@@ -28,7 +28,7 @@ struct CompactSummary: Equatable {
             allStale: !rows.isEmpty && rows.allSatisfy(\.isStale))
     }
 
-    /// Per-ear width, matching docs/prototype notch.jsx `wingWidth`.
+    /// Per-ear width.
     func wingWidth(_ style: CompactStyle) -> CGFloat {
         switch style {
         case .birdCount: 30

@@ -1,8 +1,8 @@
 import PerchCore
 import SwiftUI
 
-/// Pixel ram data (architecture.md §6.2), cleaned up from the gpt-image reference in
-/// ref/. The notch is black, so gaps and facial features are simply empty cells.
+/// Pixel ram data, 20 × 19 cells. The notch is black, so gaps and facial features are
+/// simply empty cells.
 enum RamSprite {
     /// W head; horn L highlight, H base, S inner shade, R ridge; "." empty.
     static let grid = [

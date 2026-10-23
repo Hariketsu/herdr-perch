@@ -90,7 +90,11 @@ swift test                                                   # 单元测试
 uv run --project Tests/E2E pytest Tests/E2E -p no:cacheprovider   # 端到端测试，使用一次性的 Herdr Session
 ```
 
-`perchctl dump | watch` 会打印 Perch 从 Herdr 推导出的状态，调试时很有用。设计文档在 [`docs/spec`](docs/spec)。
+`perchctl dump | watch` 会打印 Perch 从 Herdr 推导出的状态，调试时很有用。
+
+## 参与贡献
+
+欢迎提交 Bug、想法和 Pull Request。构建、测试和提交改动的方法见 [CONTRIBUTING.md](CONTRIBUTING.md)，代码结构见 [ARCHITECTURE.md](ARCHITECTURE.md)（均为英文）。
 
 ## 致谢
 

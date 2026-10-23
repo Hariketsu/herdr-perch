@@ -131,7 +131,7 @@ import Testing
     }
 }
 
-// Fixed-window canvas contract: architecture.md §6.1.
+// Fixed-window canvas contract: ARCHITECTURE.md, Window.
 extension NotchGeometryTests {
     @Test func canvasOnNotchedAndUnnotchedScreensIncludesMargins() {
         #expect(NotchGeometry.maxWingWidth == 140)

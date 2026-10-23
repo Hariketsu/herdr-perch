@@ -36,7 +36,7 @@ enum PresentationEvent: Equatable {
     case settingsChanged(peekOnFinished: Bool)
 }
 
-/// Pure reducer for the notch surface (architecture.md §6, §6.3). Time is passed in;
+/// Pure reducer for the notch surface (ARCHITECTURE.md, Presentation). Time is passed in;
 /// the caller sends `.tick` at `nextTick`.
 struct PresentationState {
     static let hoverIntent: Duration = .milliseconds(120)

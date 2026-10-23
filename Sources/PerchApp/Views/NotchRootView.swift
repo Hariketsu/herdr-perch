@@ -37,7 +37,7 @@ struct NotchRootView: View {
                 .allowsHitTesting(expanded)
                 .accessibilityHidden(!expanded)
 
-            // Peek (architecture.md §6.3): the cards that need a look, below the camera housing.
+            // Peek: the cards that need a look, below the camera housing.
             VStack(spacing: 0) {
                 Color.clear.frame(height: model.geometry.bandHeight)
                 PeekList(items: model.presentation.peekItems, rows: model.store.rows,

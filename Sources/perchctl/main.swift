@@ -1,7 +1,9 @@
 import Foundation
 import PerchCore
 
-// Debug/test CLI over PerchCore. Output format: architecture.md §4.7.
+// Debug/test CLI over PerchCore. dump and watch print one JSON line per row list, in StateTrace's
+// format ({"t", "rows": [{session, pane, status, title, stale}], "sessions": [{name, health}]});
+// jump prints {"outcome": "focused" | "needsAttach" | "failed", "message"} and exits 0 only when focused.
 
 func usage() -> Never {
     FileHandle.standardError.write(Data("usage: perchctl dump|watch [--root <dir>] | jump <session> <pane> [--root <dir>]\n".utf8))

@@ -90,7 +90,11 @@ swift test                                                   # unit tests
 uv run --project Tests/E2E pytest Tests/E2E -p no:cacheprovider   # end-to-end, against a throwaway Herdr session
 ```
 
-`perchctl dump | watch` prints the state Perch derives from Herdr, which is handy for debugging. Design notes (in Chinese) live in [`docs/spec`](docs/spec).
+`perchctl dump | watch` prints the state Perch derives from Herdr, which is handy for debugging.
+
+## Contributing
+
+Bug reports, ideas and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to build, test and submit changes, and [ARCHITECTURE.md](ARCHITECTURE.md) for a map of the code.
 
 ## Acknowledgments
 

@@ -5,10 +5,10 @@ enum DisplayPlacement: String {
     case mainDisplay
 }
 
-/// User settings (product.md §8). Missing or unknown values fall back to defaults.
+/// User settings (ARCHITECTURE.md, Settings). Missing or unknown values fall back to defaults.
 struct Preferences: Equatable {
     var compactStyle: CompactStyle = .birdCount
-    /// Blocked agents always peek (architecture.md §6.3); finished ones only when this is on.
+    /// Blocked agents always peek (ARCHITECTURE.md, Presentation); finished ones only when this is on.
     var peekOnFinished = true
     var displayPlacement: DisplayPlacement = .builtInNotch
     var launchAtLogin = false

@@ -1,7 +1,7 @@
 import PerchCore
 import SwiftUI
 
-/// Expanded list, grouped (architecture.md §6.2): sections by status with cards for
+/// Expanded list, grouped: sections by status with cards for
 /// agents that need a look and a folded Idle section. Notices show as cards on top.
 struct AgentList: View {
     var rows: [AgentRow]
@@ -27,7 +27,7 @@ struct AgentList: View {
     }
 }
 
-/// Peek cards (architecture.md §6.3): only what needs a look, without the strip or group headers.
+/// Peek cards (ARCHITECTURE.md, Presentation): only what needs a look, without the strip or group headers.
 struct PeekList: View {
     var items: [PeekItem]
     var rows: [AgentRow]
@@ -217,7 +217,7 @@ private struct CardRow: View {
         }
         .padding(.horizontal, 10).padding(.vertical, 9)
         .background(Self.tint(row), in: RoundedRectangle(cornerRadius: 11))
-        // Something new arrived for this row while the list was open (architecture.md §6.3).
+        // Something new arrived for this row while the list was open.
         .overlay {
             let flashing = highlightedAgent == row.id
             RoundedRectangle(cornerRadius: 11).strokeBorder(.white.opacity(flashing ? 0.4 : 0), lineWidth: 1.5)
@@ -329,7 +329,7 @@ private func cleaned(_ row: AgentRow) -> AgentRow {
     return row
 }
 
-/// Status line text, only from Herdr fields (product.md §3).
+/// Status line text, only from Herdr fields (ARCHITECTURE.md, Herdr boundary).
 func statusLine(_ row: AgentRow) -> String {
     if let subtitle = row.subtitle { return subtitle }
     switch row.status {

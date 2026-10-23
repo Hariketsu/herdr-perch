@@ -453,6 +453,7 @@ struct Preferences: Equatable {
     var launchAtLogin = false
     var followReduceMotion = false   // 默认始终播放完整动画；开启后才跟随系统的"减少动态效果"（2026-10-20 确认）
     // 键名：compactStyle, listStyle, autoExpandOnBlocked, displayPlacement, launchAtLogin, followReduceMotion
+    // 现行（2026-10-23）：compactStyle, peekOnFinished, displayPlacement, launchAtLogin, followReduceMotion, cleanTitles
     // 缺失或无法识别的值取默认值
     static func load(from defaults: UserDefaults) -> Preferences
     func save(to defaults: UserDefaults)
@@ -537,10 +538,8 @@ extension PresentationState {
 依据 2026-10-22 的 HTML 原型（`designs/perch-notch/`，不入库）：列表 B 布局、公羊"羊角 · 中"、单色图标，均已获用户确认。
 
 ```swift
-enum ListStyle: String {
-    case grouped                                  // 新增，默认值；设置里叫 "Grouped"
-    case heroAndRows, rowsOnly                    // 保留为可选项（"Detailed" / "Compact"）
-}
+// 2026-10-23 删除列表样式设置（用户确认，按 HIG "Minimize the number of settings"）：
+// Grouped 是唯一版式，ListStyle、Preferences.listStyle 以及 Detailed / Compact 的视图一并删除；旧键 listStyle 不再读取。
 
 /// 分组列表的分组。纯逻辑（PerchApp/Presentation/ListGroups.swift）。
 enum ListGroups {

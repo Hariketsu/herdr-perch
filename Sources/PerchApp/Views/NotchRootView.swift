@@ -139,7 +139,7 @@ private struct ExpandedContent: View {
             // Measured in place: the list is always mounted, and rows are single-line so
             // its height does not depend on the width of the moment. (A hidden duplicate
             // used for measuring doubled the view graph that hover hit-testing walks.)
-            AgentList(rows: model.store.rows, style: model.preferences.listStyle,
+            AgentList(rows: model.store.rows,
                       cleanTitles: model.preferences.cleanTitles, idleExpanded: $model.idleExpanded,
                       notice: model.notice, onActivate: model.activate)
                 .fixedSize(horizontal: false, vertical: true)

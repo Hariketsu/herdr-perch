@@ -1,11 +1,5 @@
 import Foundation
 
-enum ListStyle: String {
-    case grouped
-    case heroAndRows
-    case rowsOnly
-}
-
 enum DisplayPlacement: String {
     case builtInNotch
     case mainDisplay
@@ -14,7 +8,6 @@ enum DisplayPlacement: String {
 /// User settings (product.md §8). Missing or unknown values fall back to defaults.
 struct Preferences: Equatable {
     var compactStyle: CompactStyle = .birdCount
-    var listStyle: ListStyle = .grouped
     /// Blocked agents always peek (architecture.md §6.3); finished ones only when this is on.
     var peekOnFinished = true
     var displayPlacement: DisplayPlacement = .builtInNotch
@@ -25,7 +18,6 @@ struct Preferences: Equatable {
     static func load(from defaults: UserDefaults) -> Preferences {
         var preferences = Preferences()
         if let style = defaults.string(forKey: "compactStyle").flatMap(CompactStyle.init) { preferences.compactStyle = style }
-        if let style = defaults.string(forKey: "listStyle").flatMap(ListStyle.init) { preferences.listStyle = style }
         if let enabled = defaults.object(forKey: "peekOnFinished") as? Bool { preferences.peekOnFinished = enabled }
         if let placement = defaults.string(forKey: "displayPlacement").flatMap(DisplayPlacement.init) {
             preferences.displayPlacement = placement
@@ -38,7 +30,6 @@ struct Preferences: Equatable {
 
     func save(to defaults: UserDefaults) {
         defaults.set(compactStyle.rawValue, forKey: "compactStyle")
-        defaults.set(listStyle.rawValue, forKey: "listStyle")
         defaults.set(peekOnFinished, forKey: "peekOnFinished")
         defaults.set(displayPlacement.rawValue, forKey: "displayPlacement")
         defaults.set(launchAtLogin, forKey: "launchAtLogin")

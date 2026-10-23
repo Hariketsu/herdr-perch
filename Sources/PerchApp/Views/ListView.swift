@@ -1,12 +1,10 @@
 import PerchCore
 import SwiftUI
 
-/// Expanded list. Grouped (default, architecture.md §6.2): sections by status with
-/// cards for agents that need a look and a folded Idle section; Detailed and Compact
-/// list every agent in one run. Notices show as cards on top.
+/// Expanded list, grouped (architecture.md §6.2): sections by status with cards for
+/// agents that need a look and a folded Idle section. Notices show as cards on top.
 struct AgentList: View {
     var rows: [AgentRow]
-    var style: ListStyle
     var cleanTitles: Bool
     @Binding var idleExpanded: Bool
     var notice: String?
@@ -21,24 +19,8 @@ struct AgentList: View {
                     .frame(maxWidth: .infinity).padding(.vertical, 10)
             }
             TimelineView(.periodic(from: .now, by: 30)) { context in
-                let shown = cleanTitles ? rows.map(cleaned) : rows
-                switch style {
-                case .grouped:
-                    GroupedList(rows: shown, now: context.date, idleExpanded: $idleExpanded, onActivate: onActivate)
-                case .heroAndRows, .rowsOnly:
-                    VStack(spacing: 2) {
-                        ForEach(shown) { row in
-                            Button { onActivate(row) } label: {
-                                if style == .heroAndRows {
-                                    DetailedRow(row: row, now: context.date)
-                                } else {
-                                    CompactRow(row: row, now: context.date)
-                                }
-                            }
-                            .buttonStyle(RowButtonStyle())
-                        }
-                    }
-                }
+                GroupedList(rows: cleanTitles ? rows.map(cleaned) : rows, now: context.date,
+                            idleExpanded: $idleExpanded, onActivate: onActivate)
             }
         }
         .padding(EdgeInsets(top: 4, leading: 10, bottom: 10, trailing: 10))
@@ -275,82 +257,6 @@ private struct IdleRow: View {
             Affordance()
         }
         .padding(.horizontal, 10).padding(.vertical, 5)
-    }
-}
-
-// MARK: - Detailed and Compact
-
-/// Two-line row: ram | title / status line | tags.
-private struct DetailedRow: View {
-    var row: AgentRow
-    var now: Date
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            PixelRam(status: row.status, stale: row.isStale).frame(width: 22)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(row.title).font(.system(size: 13, weight: .semibold)).foregroundStyle(.white)
-                    .lineLimit(1)
-                Text(statusLine(row)).font(.system(size: 11.5)).lineLimit(1)
-                    .foregroundStyle(row.isStale ? Color(hex: 0x666666) : Palette.color(row.status))
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            Tags(row: row, now: now).padding(.top, 1)
-            Affordance()
-        }
-        .padding(.horizontal, 10).padding(.vertical, 8)
-    }
-}
-
-/// Single-line row for denser lists.
-private struct CompactRow: View {
-    var row: AgentRow
-    var now: Date
-
-    var body: some View {
-        HStack(spacing: 8) {
-            PixelRam(status: row.status, stale: row.isStale).frame(width: 22)
-            Text(row.title).font(.system(size: 12, weight: .medium)).foregroundStyle(.white.opacity(0.85))
-                .lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
-            if row.status == .blocked || row.status == .finished {
-                Text(row.status == .blocked ? "Input" : "Done")
-                    .font(.system(size: 10.5, weight: .semibold))
-                    .foregroundStyle(row.isStale ? Color(hex: 0x666666) : Palette.color(row.status))
-            }
-            Tags(row: row, now: now)
-            Affordance()
-        }
-        .padding(.horizontal, 10).padding(.vertical, 6)
-    }
-}
-
-private struct Tags: View {
-    var row: AgentRow
-    var now: Date
-    @Environment(\.rowHovered) private var hovered
-
-    var body: some View {
-        HStack(spacing: 6) {
-            if let project = row.project { Tag(text: project) }
-            if row.showsSessionTag { Tag(text: row.session) }
-            AgentMark(label: row.agentLabel, highlighted: hovered)
-            Text(durationText(since: row.since, now: now))
-                .font(.system(size: 10).monospacedDigit()).foregroundStyle(.white.opacity(0.45))
-                .frame(minWidth: 24, alignment: .trailing)
-        }
-        .fixedSize()
-    }
-}
-
-/// Small rounded grey label for project and session names.
-private struct Tag: View {
-    var text: String
-
-    var body: some View {
-        Text(text).font(.system(size: 9.5, weight: .medium))
-            .foregroundStyle(.white.opacity(0.55))
-            .padding(.horizontal, 5).padding(.vertical, 2)
-            .background(.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 4))
     }
 }
 

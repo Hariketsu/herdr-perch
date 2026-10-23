@@ -1,0 +1,63 @@
+name: Release
+
+# Pushing a tag such as v0.3.0 builds the DMG and publishes a GitHub Release.
+# The release title is the tag message's first line and its notes are the rest of the message,
+# followed by the install instructions. Run it by hand to release a tag that already exists.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to release, e.g. v0.2.0
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-15
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ env.TAG }}
+      - name: Select Xcode 26.3
+        run: sudo xcode-select -s /Applications/Xcode_26.3.app
+      - name: Unit tests
+        run: swift test
+      - name: Build app and DMG
+        run: |
+          scripts/bundle.sh
+          scripts/make-dmg.sh
+      - name: Check the tag matches the app version
+        run: |
+          version="$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "dist/Herdr Perch.app/Contents/Info.plist")"
+          if [ "v$version" != "$TAG" ]; then
+            echo "::error::Tag $TAG does not match the app version $version (scripts/bundle.sh)"
+            exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+      - name: Write release notes from the tag message
+        run: |
+          # checkout may leave the tag lightweight; fetch the annotated tag object to read its message.
+          git fetch --force origin "refs/tags/$TAG:refs/tags/$TAG"
+          git tag -l --format='%(contents:subject)' "$TAG" > title.txt
+          {
+            git tag -l --format='%(contents:body)' "$TAG"
+            echo
+            echo "### Install"
+            echo
+            echo "1. Download \`Herdr-Perch-$VERSION.dmg\` below, open it and drag **Herdr Perch** into **Applications**."
+            echo "2. This build is not notarized. The first time you open it, macOS will block it: go to **System Settings → Privacy & Security** and click **Open Anyway**."
+            echo
+            echo "Requires macOS 14 or later on Apple silicon, and Herdr 0.9.5 or later."
+          } > notes.md
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$TAG" "dist/Herdr-Perch-$VERSION.dmg" \
+            --verify-tag --title "$(cat title.txt)" --notes-file notes.md

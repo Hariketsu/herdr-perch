@@ -12,7 +12,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var termSource: DispatchSourceSignal?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let root = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".config/herdr")
+        // PERCH_HERDR_ROOT points Perch at another directory, e.g. a single demo session (scripts/demo.py).
+        let root = ProcessInfo.processInfo.environment["PERCH_HERDR_ROOT"].map { URL(fileURLWithPath: $0) }
+            ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".config/herdr")
         let preferences = Preferences.load(from: .standard)
         store = PerchStore(root: root)
         model = NotchModel(

@@ -19,8 +19,9 @@
   <a href="LICENSE"><img src="https://img.shields.io/github/license/Hariketsu/herdr-perch?style=flat-square&color=555" alt="License"></a>
 </p>
 
-<!-- TODO: demo GIF — collapsed notch → hover to expand → an agent turns Blocked → click a row to jump into its Herdr pane -->
-<p align="center"><em>Demo GIF coming soon.</em></p>
+<p align="center">
+  <img src="docs/assets/hover.gif" width="660" alt="Hovering the notch opens the list of agents, grouped by state">
+</p>
 
 ## What it does
 
@@ -30,7 +31,11 @@
 - **Zero setup.** Perch finds every local Herdr session by itself and follows them as they start, stop and reconnect.
 - **Stays out of the way.** No Dock icon, no extra processes; it idles at well under 1% CPU.
 
-<!-- TODO: screenshots — collapsed styles (Clean / Dots / Counts), grouped list, completion feedback, settings -->
+<p align="center">
+  <img src="docs/assets/hero.png" width="660" alt="The open notch with one agent in each state: Needs you, Done, Working and Idle">
+</p>
+
+<!-- TODO: screenshots — collapsed styles (Clean / Dots / Counts), settings -->
 
 ## Requirements
 

@@ -109,7 +109,7 @@ func collapse(_ pid: pid_t, _ screen: Screen) {
 }
 
 let args = Array(CommandLine.arguments.dropFirst())
-guard let command = args.first else { fail("expected pid, park, collapse, expand, check, path, move, wiggle, post, or still") }
+guard let command = args.first else { fail("expected pid, park, collapse, expand, check, path, move, point, glide, click, wiggle, post, or still") }
 switch command {
 case "pid":
     guard args.count == 2 else { fail("pid <app executable>") }
@@ -158,6 +158,40 @@ case "collapse", "expand", "check", "path":
 case "move":
     guard args.count == 3 else { fail("move <x> <y>") }
     move(CGPoint(x: number(args[1]), y: number(args[2])))
+case "point":
+    // Prints a target in global top-down coordinates: notch center, or a visible row's center (scripts/demo.py).
+    let screen = Screen()
+    if args.count == 2, args[1] == "center" {
+        print("\(screen.center.x) \(screen.center.y)")
+    } else if args.count == 4, args[1] == "row", let pid = pid_t(args[2]), let index = Int(args[3]) {
+        let visible = rows(pid, screen)
+        guard visible.indices.contains(index) else { fail("row \(index) not visible (\(visible.count) rows)") }
+        print("\(visible[index].midX) \(visible[index].midY)")
+    } else { fail("point center | point row <pid> <index>") }
+case "glide":
+    // Eased pointer move from the current position, for screen recordings.
+    guard args.count == 4 else { fail("glide <x> <y> <seconds>") }
+    let start = CGEvent(source: nil)?.location ?? .zero
+    let end = CGPoint(x: number(args[1]), y: number(args[2]))
+    let duration = number(args[3])
+    guard duration > 0 else { fail("duration must be positive") }
+    let started = ProcessInfo.processInfo.systemUptime
+    while true {
+        let t = min(1, (ProcessInfo.processInfo.systemUptime - started) / duration)
+        let eased = t < 0.5 ? 4 * t * t * t : 1 - pow(-2 * t + 2, 3) / 2
+        move(CGPoint(x: start.x + (end.x - start.x) * eased, y: start.y + (end.y - start.y) * eased))
+        if t >= 1 { break }
+        Thread.sleep(forTimeInterval: 1.0 / 60)
+    }
+case "click":
+    // Left click at the current pointer position.
+    let location = CGEvent(source: nil)?.location ?? .zero
+    for type in [CGEventType.leftMouseDown, .leftMouseUp] {
+        guard let event = CGEvent(mouseEventSource: nil, mouseType: type,
+                                  mouseCursorPosition: location, mouseButton: .left) else { fail("cannot create click") }
+        event.post(tap: .cghidEventTap)
+        Thread.sleep(forTimeInterval: 0.06)
+    }
 case "wiggle":
     guard args.count == 6 else { fail("wiggle <x0> <y0> <x1> <y1> <seconds>") }
     let x0 = number(args[1]), y0 = number(args[2]), x1 = number(args[3]), y1 = number(args[4])

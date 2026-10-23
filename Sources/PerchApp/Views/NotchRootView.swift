@@ -13,9 +13,9 @@ struct NotchRootView: View {
 
     var body: some View {
         let expanded = model.isExpanded
-        let collapsed = model.geometry.collapsedSize(wingWidth: model.wingWidth)
-        let open = model.geometry.expandedSize(contentHeight: model.contentHeight, wingWidth: model.wingWidth)
-        let size = expanded ? open : collapsed
+        let peeking = model.isPeeking
+        let open = model.isOpen
+        let size = model.shapeSize
         let shape = NotchShape(bottomRadius: bottomRadius)
         let motion = !model.reduceMotion
 
@@ -25,7 +25,7 @@ struct NotchRootView: View {
                 .frame(width: size.width, height: size.height)
                 .shadow(color: .black.opacity(0.6), radius: 4, y: 2)
                 .shadow(color: .black.opacity(0.3), radius: 12, y: 8)
-                .shadow(color: glow(expanded: expanded), radius: expanded ? 10 : 0)
+                .shadow(color: glow(open: open), radius: open ? 10 : 0)
 
             // Always mounted, like vibeisland's stacked layers: an inserted layer would
             // appear already active and skip its fade. Laid out at the shape's current
@@ -38,8 +38,22 @@ struct NotchRootView: View {
                 .allowsHitTesting(expanded)
                 .accessibilityHidden(!expanded)
 
+            // Peek (architecture.md §6.3): the cards that need a look, below the camera housing.
+            VStack(spacing: 0) {
+                Color.clear.frame(height: model.geometry.bandHeight)
+                PeekList(items: model.presentation.peekItems, rows: model.store.rows,
+                         cleanTitles: model.preferences.cleanTitles, onActivate: model.activate)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { model.peekContentHeight = $0 }
+            }
+            .modifier(LayerFade(active: peeking))
+            .modifier(ReflowingFrame(width: size.width, height: size.height))
+            .clipShape(shape)
+            .allowsHitTesting(peeking)
+            .accessibilityHidden(!peeking)
+
             CollapsedBand(summary: model.summary, style: model.preferences.compactStyle,
-                          completion: model.presentation.completion,
+                          completion: model.completionTitle,
                           centerWidth: model.geometry.centerWidth, wingWidth: model.wingWidth,
                           height: model.geometry.bandHeight)
                 // Each ear rides its own edge of the shape (left ear the left edge, right
@@ -47,19 +61,20 @@ struct NotchRootView: View {
                 // and converge back with the edges, appearing ~60ms in, when closing.
                 // Position follows the shape's spring.
                 .frame(width: size.width)
-                .modifier(LayerFade(active: !expanded, fadeIn: 0.15, fadeOut: 0.08, fadeInDelay: 0.06))
+                .modifier(LayerFade(active: !open, fadeIn: 0.15, fadeOut: 0.08, fadeInDelay: 0.06))
                 .allowsHitTesting(false)
         }
         .contentShape(shape)
-        .onTapGesture { if expanded { model.send(.clicked) } }   // collapsed clicks come from the monitor
+        .onTapGesture { if open { model.send(.clicked) } }   // collapsed clicks come from the monitor
+        .environment(\.highlightedAgent, model.presentation.highlight)
         .scaleEffect(popping && !expanded ? 1.04 : 1, anchor: .top)
         // The centring frame must sit inside the animations: otherwise the shape's
         // position jumps to its final x while its width animates, and the notch
         // lurches ~22pt sideways at the start of collapsing (measured on video).
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .animation(motion ? (expanded ? Palette.open : Palette.close) : nil, value: size)
+        .animation(motion ? (open ? Palette.open : Palette.close) : nil, value: size)
         .animation(Palette.pop, value: popping)
-        .onChange(of: expanded, initial: true) { _, now in
+        .onChange(of: open, initial: true) { _, now in
             withAnimation(motion ? Palette.radius : nil) { bottomRadius = now ? 14 : 10 }
         }
         .onChange(of: model.presentation.pulse) { pop() }
@@ -67,8 +82,8 @@ struct NotchRootView: View {
     }
 
     /// vibeisland adds a faint white rim glow to open lists and an amber one for attention.
-    private func glow(expanded: Bool) -> Color {
-        guard expanded else { return .clear }
+    private func glow(open: Bool) -> Color {
+        guard open else { return .clear }
         return model.summary.counts[.blocked] != nil ? Palette.alert.opacity(0.15) : .white.opacity(0.04)
     }
 

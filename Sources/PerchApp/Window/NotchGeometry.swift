@@ -26,6 +26,7 @@ struct NotchGeometry: Equatable {
     static let fallbackBandHeight: CGFloat = 32
     static let floatingCenterWidth: CGFloat = 190
     static let expandedWidth: CGFloat = 640
+    static let peekWidth: CGFloat = 440
     static let maxExpandedHeight: CGFloat = 560
 
     let metrics: NotchScreenMetrics
@@ -53,8 +54,16 @@ struct NotchGeometry: Equatable {
     }
 
     func expandedSize(contentHeight: CGFloat, wingWidth: CGFloat) -> CGSize {
+        openSize(width: Self.expandedWidth, contentHeight: contentHeight, wingWidth: wingWidth)
+    }
+
+    func peekSize(contentHeight: CGFloat, wingWidth: CGFloat) -> CGSize {
+        openSize(width: Self.peekWidth, contentHeight: contentHeight, wingWidth: wingWidth)
+    }
+
+    private func openSize(width preferred: CGFloat, contentHeight: CGFloat, wingWidth: CGFloat) -> CGSize {
         let collapsed = collapsedSize(wingWidth: wingWidth)
-        let width = max(collapsed.width, min(Self.expandedWidth, metrics.frame.width - 24))
+        let width = max(collapsed.width, min(preferred, metrics.frame.width - 24))
         let height = min(bandHeight + contentHeight, Self.maxExpandedHeight, metrics.frame.height * 0.72)
         return CGSize(width: width, height: (height / 2).rounded() * 2)
     }

@@ -45,6 +45,42 @@ struct AgentList: View {
     }
 }
 
+/// Peek cards (architecture.md §6.3): only what needs a look, without the strip or group headers.
+struct PeekList: View {
+    var items: [PeekItem]
+    var rows: [AgentRow]
+    var cleanTitles: Bool
+    var onActivate: (AgentRow) -> Void
+
+    var body: some View {
+        let (shown, overflow) = PeekLayout.split(items)
+        VStack(alignment: .leading, spacing: 4) {
+            TimelineView(.periodic(from: .now, by: 30)) { context in
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(shown, id: \.self) { item in card(item, now: context.date) }
+                }
+            }
+            if overflow > 0 {
+                Text("+\(overflow) more").font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.38)).padding(.horizontal, 10).padding(.top, 2)
+            }
+        }
+        .padding(EdgeInsets(top: 4, leading: 10, bottom: 10, trailing: 10))
+    }
+
+    @ViewBuilder private func card(_ item: PeekItem, now: Date) -> some View {
+        switch item {
+        case let .system(alert):
+            NoticeCard(text: NotchModel.text(alert))
+        case let .blocked(ref), let .finished(ref):
+            if let row = rows.first(where: { $0.id == ref }) {
+                Button { onActivate(row) } label: { CardRow(row: cleanTitles ? cleaned(row) : row, now: now) }
+                    .buttonStyle(RowButtonStyle())
+            }
+        }
+    }
+}
+
 /// Status counts on the left of the expanded strip: "● 1 need you  ● 2 working  ● 3 idle";
 /// drops the words when they would run into the camera housing.
 struct StatusSummary: View {
@@ -177,6 +213,7 @@ private struct CardRow: View {
     var row: AgentRow
     var now: Date
     @Environment(\.rowHovered) private var hovered
+    @Environment(\.highlightedAgent) private var highlightedAgent
 
     var body: some View {
         HStack(spacing: 10) {
@@ -198,6 +235,12 @@ private struct CardRow: View {
         }
         .padding(.horizontal, 10).padding(.vertical, 9)
         .background(Self.tint(row), in: RoundedRectangle(cornerRadius: 11))
+        // Something new arrived for this row while the list was open (architecture.md §6.3).
+        .overlay {
+            let flashing = highlightedAgent == row.id
+            RoundedRectangle(cornerRadius: 11).strokeBorder(.white.opacity(flashing ? 0.4 : 0), lineWidth: 1.5)
+                .animation(.easeOut(duration: flashing ? 0.1 : 0.8), value: flashing)
+        }
     }
 
     static func tint(_ row: AgentRow) -> Color {
@@ -366,6 +409,10 @@ private struct RowButtonStyle: ButtonStyle {
 
 private extension EnvironmentValues {
     @Entry var rowHovered = false
+}
+
+extension EnvironmentValues {
+    @Entry var highlightedAgent: AgentRef?
 }
 
 /// The row with prompt prefixes and icons stripped from its title and subtitle (Settings › Clean titles).

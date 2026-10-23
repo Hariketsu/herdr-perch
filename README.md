@@ -26,7 +26,7 @@
 ## What it does
 
 - **Every agent at a glance.** A pixel ram in the notch takes the colour of your most urgent agent; hover to see them all, grouped into *Needs you*, *Done*, *Working* and a folded *Idle*.
-- **Speaks up when it matters.** When an agent asks for approval or input, the notch opens on its own (you can turn this off). When one finishes, the notch briefly shows `✓ title`.
+- **Speaks up when it matters.** When an agent asks for approval or input, finishes, or Herdr goes away, the notch peeks out with just that card; hover to see everything. You can switch this to opening the full list or a simple bounce.
 - **One click back.** Click a row to focus that agent's pane in Herdr and bring your terminal to the front.
 - **Zero setup.** Perch finds every local Herdr session by itself and follows them as they start, stop and reconnect.
 - **Stays out of the way.** No Dock icon, no extra processes; it idles at well under 1% CPU.

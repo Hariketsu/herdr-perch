@@ -109,15 +109,15 @@ final class NotchWindowController {
             model.send(event)
         }
         // Assign only on change: this runs for every mouse move.
-        let ignores = !(model.isExpanded && tracker.isInside)
+        let ignores = !(model.isOpen && tracker.isInside)
         if panel.ignoresMouseEvents != ignores { panel.ignoresMouseEvents = ignores }
     }
 
     private func pointerClicked() {
         guard model.surface != .hidden else { return }
         let location = NSEvent.mouseLocation
-        if model.isExpanded {
-            // Clicks inside reach SwiftUI directly; only outside clicks matter here.
+        if model.isOpen {
+            // Clicks inside reach SwiftUI directly; only outside clicks matter here (a peek ignores them).
             if PointerTracker.click(at: location, region: shapeRegion, expanded: true) == .clickedOutside {
                 model.send(.clickedOutside)
             }

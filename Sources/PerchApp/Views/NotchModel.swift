@@ -7,10 +7,11 @@ import PerchCore
 final class NotchModel {
     let store: PerchStore
     var preferences: Preferences {
-        didSet { presentation.handle(.settingsChanged(autoExpandOnBlocked: preferences.autoExpandOnBlocked), now: .now) }
+        didSet { presentation.handle(.settingsChanged(preferences.alerts), now: .now) }
     }
     var geometry: NotchGeometry
     var contentHeight: CGFloat = 0
+    var peekContentHeight: CGFloat = 0
     var notice: String?
     /// Grouped list: the Idle section is folded at every launch.
     var idleExpanded = false
@@ -21,38 +22,49 @@ final class NotchModel {
     private(set) var presentation: PresentationState
 
     @ObservationIgnored private var tickTask: Task<Void, Never>?
-    @ObservationIgnored private var blockedRefs: Set<AgentRef> = []
-    @ObservationIgnored private var completions = CompletionDetector()
     @ObservationIgnored private let terminal = TerminalActivator()
 
     init(store: PerchStore, preferences: Preferences, geometry: NotchGeometry) {
         self.store = store
         self.preferences = preferences
         self.geometry = geometry
-        presentation = PresentationState(autoExpandOnBlocked: preferences.autoExpandOnBlocked)
+        presentation = PresentationState(alerts: preferences.alerts)
     }
 
     var summary: CompactSummary { CompactSummary.make(store.rows) }
-    var wingWidth: CGFloat { summary.wingWidth(preferences.compactStyle) }
+    /// The ear widens while it shows "✓ title" (FinishedAlert.ear).
+    var wingWidth: CGFloat {
+        completionTitle == nil ? summary.wingWidth(preferences.compactStyle) : NotchGeometry.maxWingWidth
+    }
     var surface: Surface { presentation.surface }
     var isExpanded: Bool { if case .expanded = surface { true } else { false } }
+    var isPeeking: Bool { surface == .peek }
+    /// Expanded or peeking: the panel takes mouse events inside the shape.
+    var isOpen: Bool { isExpanded || isPeeking }
 
     /// Size of the black shape (shoulders excluded).
     var shapeSize: CGSize {
-        isExpanded
-            ? geometry.expandedSize(contentHeight: contentHeight, wingWidth: wingWidth)
-            : geometry.collapsedSize(wingWidth: wingWidth)
+        switch surface {
+        case .expanded: geometry.expandedSize(contentHeight: contentHeight, wingWidth: wingWidth)
+        case .peek: geometry.peekSize(contentHeight: peekContentHeight, wingWidth: wingWidth)
+        case .hidden, .collapsed: geometry.collapsedSize(wingWidth: wingWidth)
+        }
+    }
+
+    /// Title for the collapsed "✓ title" ear, if its agent is still listed.
+    var completionTitle: String? {
+        guard let ref = presentation.completion, let row = store.rows.first(where: { $0.id == ref }) else { return nil }
+        return preferences.cleanTitles ? TitleCleaner.clean(row.title) : row.title
     }
 
     func rowsDidChange() {
-        let blocked = Set(store.rows.filter { $0.status == .blocked && !$0.isStale }.map(\.id))
-        let newBlocked = !blocked.subtracting(blockedRefs).isEmpty
-        blockedRefs = blocked
+        let live = store.rows.filter { !$0.isStale }
+        let attention = Attention(
+            blocked: live.filter { $0.status == .blocked }.map(\.id),
+            finished: live.filter { $0.status == .finished }.map(\.id),
+            system: systemAlert)
         if !store.rows.isEmpty { notice = staleNotice }
-        send(.rowsChanged(hasRows: !store.rows.isEmpty, newBlocked: newBlocked))
-        if let row = completions.observe(store.rows) {
-            send(.agentFinished(title: preferences.cleanTitles ? TitleCleaner.clean(row.title) : row.title))
-        }
+        send(.rowsChanged(hasRows: !store.rows.isEmpty, attention: attention))
     }
 
     func send(_ event: PresentationEvent) {
@@ -88,12 +100,20 @@ final class NotchModel {
         }
     }
 
-    private var staleNotice: String? {
+    private var systemAlert: SystemAlert? {
         if store.sessions.contains(where: { if case .updateRequired = $0.health { true } else { false } }) {
-            return "Herdr update required (0.9.5 or later)"
+            return .updateRequired
         }
-        if store.rows.contains(where: \.isStale) { return "Herdr isn’t reachable — reconnecting…" }
-        return nil
+        return store.rows.contains(where: \.isStale) ? .unreachable : nil
+    }
+
+    private var staleNotice: String? { systemAlert.map(Self.text) }
+
+    static func text(_ alert: SystemAlert) -> String {
+        switch alert {
+        case .updateRequired: "Herdr update required (0.9.5 or later)"
+        case .unreachable: "Herdr isn’t reachable — reconnecting…"
+        }
     }
 
     private func showNotice(_ text: String) {

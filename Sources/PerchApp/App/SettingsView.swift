@@ -92,7 +92,16 @@ private struct GeneralPage: View {
 
     var body: some View {
         Section(title: "Behavior") {
-            Toggle("Expand when an agent is blocked", isOn: savedBinding(model, \.autoExpandOnBlocked))
+            Picker("When an agent is blocked", selection: savedBinding(model, \.blockedAlert)) {
+                Text("Peek").tag(BlockedAlert.peek)
+                Text("Expand the list").tag(BlockedAlert.expand)
+                Text("Bounce the notch").tag(BlockedAlert.pulse)
+            }
+            Picker("When an agent finishes", selection: savedBinding(model, \.finishedAlert)) {
+                Text("Peek").tag(FinishedAlert.peek)
+                Text("Show ✓ in the notch").tag(FinishedAlert.ear)
+                Text("Nothing").tag(FinishedAlert.off)
+            }
             Divider()
             Toggle("Launch at login", isOn: Binding(
                 get: { model.preferences.launchAtLogin },

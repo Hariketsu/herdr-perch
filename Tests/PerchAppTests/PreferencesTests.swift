@@ -12,7 +12,6 @@ import Testing
 
     private func expectDefaults(_ preferences: Preferences) {
         #expect(preferences.compactStyle == .birdCount)
-        #expect(preferences.listStyle == .grouped)
         #expect(preferences.peekOnFinished)
         #expect(preferences.displayPlacement == .builtInNotch)
         #expect(!preferences.launchAtLogin)
@@ -27,11 +26,10 @@ import Testing
         }
     }
 
-    @Test func allSevenKeysAndRoundTrip() throws {
+    @Test func allSixKeysAndRoundTrip() throws {
         try withDefaults { defaults, name in
             var preferences = Preferences()
             preferences.compactStyle = .counts
-            preferences.listStyle = .rowsOnly
             preferences.peekOnFinished = false
             preferences.displayPlacement = .mainDisplay
             preferences.launchAtLogin = true
@@ -40,9 +38,8 @@ import Testing
             preferences.save(to: defaults)
             #expect(Preferences.load(from: defaults) == preferences)
             let persisted = try #require(defaults.persistentDomain(forName: name))
-            #expect(Set(persisted.keys) == ["compactStyle", "listStyle", "peekOnFinished", "displayPlacement", "launchAtLogin", "followReduceMotion", "cleanTitles"])
+            #expect(Set(persisted.keys) == ["compactStyle", "peekOnFinished", "displayPlacement", "launchAtLogin", "followReduceMotion", "cleanTitles"])
             #expect(defaults.string(forKey: "compactStyle") == "C")
-            #expect(defaults.string(forKey: "listStyle") == "rowsOnly")
             #expect(defaults.object(forKey: "peekOnFinished") as? Bool == false)
             #expect(defaults.string(forKey: "displayPlacement") == "mainDisplay")
             #expect(defaults.object(forKey: "launchAtLogin") as? Bool == true)
@@ -54,14 +51,12 @@ import Testing
     @Test func loadsLiteralKeysIndependentlyOfSave() throws {
         try withDefaults { defaults, _ in
             defaults.set("B", forKey: "compactStyle")
-            defaults.set("rowsOnly", forKey: "listStyle")
             defaults.set(false, forKey: "peekOnFinished")
             defaults.set("mainDisplay", forKey: "displayPlacement")
             defaults.set(true, forKey: "launchAtLogin")
             defaults.set(false, forKey: "cleanTitles")
             let preferences = Preferences.load(from: defaults)
             #expect(preferences.compactStyle == .dots)
-            #expect(preferences.listStyle == .rowsOnly)
             #expect(!preferences.peekOnFinished)
             #expect(preferences.displayPlacement == .mainDisplay)
             #expect(preferences.launchAtLogin)
@@ -70,26 +65,14 @@ import Testing
         }
     }
 
-    @Test func groupedListStyleRoundTrip() throws {
-        try withDefaults { defaults, _ in
-            var preferences = Preferences()
-            preferences.listStyle = .grouped
-            preferences.save(to: defaults)
-            #expect(defaults.string(forKey: "listStyle") == "grouped")
-            #expect(Preferences.load(from: defaults) == preferences)
-        }
-    }
-
     @Test func unknownEnumValuesFallBackWithoutLosingRecognizedSettings() throws {
         try withDefaults { defaults, _ in
             defaults.set("future-style", forKey: "compactStyle")
-            defaults.set("future-list", forKey: "listStyle")
             defaults.set("future-screen", forKey: "displayPlacement")
             defaults.set(false, forKey: "peekOnFinished")
             defaults.set(true, forKey: "launchAtLogin")
             let preferences = Preferences.load(from: defaults)
             #expect(preferences.compactStyle == .birdCount)
-            #expect(preferences.listStyle == .grouped)
             #expect(preferences.displayPlacement == .builtInNotch)
             #expect(!preferences.peekOnFinished)
             #expect(preferences.launchAtLogin)
@@ -99,7 +82,6 @@ import Testing
     @Test func unrecognizedTypesFallBackToDefaults() throws {
         try withDefaults { defaults, _ in
             defaults.set(42, forKey: "compactStyle")
-            defaults.set(["rowsOnly"], forKey: "listStyle")
             defaults.set(["enabled": true], forKey: "peekOnFinished")
             defaults.set(["screen": "main"], forKey: "displayPlacement")
             defaults.set([true], forKey: "launchAtLogin")
@@ -148,6 +130,28 @@ extension PreferencesTests {
             var expected = Preferences()
             expected.peekOnFinished = false
             #expect(Preferences.load(from: defaults) == expected)
+        }
+    }
+}
+
+extension PreferencesTests {
+    @Test(arguments: ["grouped", "heroAndRows", "rowsOnly"])
+    func legacyListStyleIsIgnoredAndNotSaved(_ legacyStyle: String) throws {
+        try withDefaults { defaults, _ in
+            defaults.set(legacyStyle, forKey: "listStyle")
+            defaults.set("B", forKey: "compactStyle")
+            defaults.set(false, forKey: "peekOnFinished")
+            var expected = Preferences()
+            expected.compactStyle = .dots
+            expected.peekOnFinished = false
+            let loaded = Preferences.load(from: defaults)
+            #expect(loaded == expected)
+            try withDefaults { destination, name in
+                loaded.save(to: destination)
+                let persisted = try #require(destination.persistentDomain(forName: name))
+                #expect(Set(persisted.keys) == ["compactStyle", "peekOnFinished", "displayPlacement", "launchAtLogin", "followReduceMotion", "cleanTitles"])
+                #expect(persisted["listStyle"] == nil)
+            }
         }
     }
 }

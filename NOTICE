@@ -8,6 +8,11 @@ licensed under the Apache License, Version 2.0
 (see LICENSES/NotchAgent-Apache-2.0.txt).
 Files derived from NotchAgent carry a header naming the original file.
 
+The overlay window and pointer handling in
+Sources/PerchApp/Window/NotchWindowController.swift follow open-vibe-island
+(https://github.com/Octane0411/open-vibe-island), licensed under the
+GNU General Public License, version 3.
+
 Agent icons embedded in Sources/PerchApp/Views/AgentIcon.swift:
 - Claude Code, Codex, OpenCode and Pi marks from Lobe Icons
   (https://github.com/lobehub/lobe-icons), Copyright LobeHub, MIT License.

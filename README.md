@@ -9,6 +9,10 @@
 </p>
 
 <p align="center">
+  English · <a href="README.zh-CN.md">简体中文</a>
+</p>
+
+<p align="center">
   <a href="https://github.com/Hariketsu/herdr-perch/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Hariketsu/herdr-perch/ci.yml?branch=main&style=flat-square&label=CI" alt="CI"></a>
   <a href="https://github.com/Hariketsu/herdr-perch/releases/latest"><img src="https://img.shields.io/github/v/release/Hariketsu/herdr-perch?style=flat-square&color=555" alt="Latest release"></a>
   <a href="https://github.com/Hariketsu/herdr-perch/releases"><img src="https://img.shields.io/github/downloads/Hariketsu/herdr-perch/total?style=flat-square&color=555" alt="Downloads"></a>
@@ -62,7 +66,7 @@ Open Settings from the gear in the expanded notch, or from the ram in the menu b
 |---|---|
 | Notch style | Clean (count) · Dots (one per agent) · Counts (per state) |
 | Rows | Grouped · Detailed · Compact |
-| Expand when an agent is blocked | On · Off |
+| Peek when an agent finishes | On · Off |
 | Display | Built-in Notch Display · Main Display |
 | Clean agent titles | On · Off |
 | Follow system "Reduce motion" | Off · On |
@@ -91,10 +95,10 @@ uv run --project Tests/E2E pytest Tests/E2E -p no:cacheprovider   # end-to-end, 
 
 ## Acknowledgments
 
-- [NotchAgent](https://github.com/ykushch/notchagent) by Yuri Kushch — parts of the Herdr client and terminal activation are derived from it (Apache-2.0, see [NOTICE](NOTICE)).
-- [Vibe Island](https://vibeisland.app) — the reference for the notch's look and motion.
-- [Lobe Icons](https://github.com/lobehub/lobe-icons) and [oh-my-pi](https://github.com/can1357/oh-my-pi) — the agent marks (MIT).
 - [Herdr](https://github.com/herdrdev/herdr), for an API that makes companions like this possible.
+- [Vibe Island](https://vibeisland.app) and [open-vibe-island](https://github.com/Octane0411/open-vibe-island) : the reference for the notch's look and motion; the overlay window and pointer handling are derived from open-vibe-island (GPL-3.0).
+- [NotchAgent](https://github.com/ykushch/notchagent) : parts of the Herdr client and terminal activation are derived from it.
+- [Lobe Icons](https://github.com/lobehub/lobe-icons) and [oh-my-pi](https://github.com/can1357/oh-my-pi) : the agent marks (MIT).
 
 ## License
 
